@@ -1,9 +1,11 @@
 import SwiftUI
+import UIKit
 
 struct CategoryListView: View {
     @EnvironmentObject var repository: DataRepository
     @State private var showingAddCategory = false
     @State private var editingCategory: Category?
+    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         NavigationStack {
@@ -11,9 +13,9 @@ struct CategoryListView: View {
                 Theme.Colors.background
                     .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                        // Header
+                if repository.categories.isEmpty {
+                    VStack {
+                        // Header for empty state
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 8) {
                                 Image(systemName: "snowflake")
@@ -29,28 +31,94 @@ struct CategoryListView: View {
                                 .font(Theme.Typography.body)
                                 .foregroundColor(Theme.Colors.textSecondary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, Theme.Spacing.lg)
                         .padding(.top, Theme.Spacing.sm)
 
-                        // Categories List
-                        if repository.categories.isEmpty {
-                            emptyStateView
-                        } else {
-                            LazyVStack(spacing: Theme.Spacing.sm) {
-                                ForEach(repository.categories) { category in
-                                    NavigationLink(value: category) {
-                                        CategoryCard(
-                                            category: category,
-                                            onEdit: { editingCategory = category }
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
+                        emptyStateView
+                        Spacer()
+                    }
+                } else {
+                    List {
+                        // Header Section
+                        Section {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "snowflake")
+                                        .font(.largeTitle)
+                                        .foregroundColor(Theme.Colors.primary)
+
+                                    Text("Морозилка")
+                                        .font(Theme.Typography.largeTitle)
+                                        .foregroundColor(Theme.Colors.textPrimary)
                                 }
+
+                                Text("\(totalItems) \(itemsWord) в \(repository.categories.count) \(categoriesWord)")
+                                    .font(Theme.Typography.body)
+                                    .foregroundColor(Theme.Colors.textSecondary)
                             }
-                            .padding(.horizontal, Theme.Spacing.lg)
+                            .listRowInsets(EdgeInsets(top: Theme.Spacing.sm, leading: Theme.Spacing.lg, bottom: Theme.Spacing.md, trailing: Theme.Spacing.lg))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                        }
+
+                        // Categories Section
+                        Section {
+                            ForEach(repository.categories) { category in
+                                NavigationLink(value: category) {
+                                    CategoryCard(
+                                        category: category,
+                                        onEdit: { editingCategory = category },
+                                        onLongPress: {
+                                            let impact = UIImpactFeedbackGenerator(style: .medium)
+                                            impact.impactOccurred()
+                                            withAnimation {
+                                                editMode = .active
+                                            }
+                                        }
+                                    )
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(
+                                    top: Theme.Spacing.sm / 2,
+                                    leading: Theme.Spacing.lg,
+                                    bottom: Theme.Spacing.sm / 2,
+                                    trailing: Theme.Spacing.lg
+                                ))
+                            }
+                            .onMove { fromOffsets, toOffset in
+                                var reordered = repository.categories
+                                reordered.move(fromOffsets: fromOffsets, toOffset: toOffset)
+                                repository.reorderCategories(reordered)
+                            }
                         }
                     }
-                    .padding(.bottom, 100)
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .environment(\.editMode, $editMode)
+                    .overlay(alignment: .top) {
+                        if editMode == .active {
+                            HStack {
+                                Text("Перетащите категории для изменения порядка")
+                                    .font(Theme.Typography.footnote)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Button("Готово") {
+                                    withAnimation {
+                                        editMode = .inactive
+                                    }
+                                }
+                                .font(Theme.Typography.footnote)
+                                .foregroundColor(.white)
+                            }
+                            .padding(Theme.Spacing.md)
+                            .background(Theme.Colors.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+                            .padding(Theme.Spacing.lg)
+                            .padding(.top, Theme.Spacing.sm)
+                        }
+                    }
                 }
 
                 // Add Button

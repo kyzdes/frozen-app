@@ -102,8 +102,11 @@ struct ItemListView: View {
                                     item: item,
                                     onEdit: { editingItem = item },
                                     onDelete: { repository.deleteItem(item.id) },
-                                    onUpdateQuantity: { delta in
-                                        repository.updateItemQuantity(item.id, delta: delta)
+                                    onUpdatePackagesCount: { delta in
+                                        repository.updateItemPackagesCount(item.id, delta: delta)
+                                    },
+                                    onUpdateItemsCount: { delta in
+                                        repository.updateItemItemsCount(item.id, delta: delta)
                                     }
                                 )
                             }

@@ -3,6 +3,7 @@ import SwiftUI
 struct CategoryCard: View {
     let category: Category
     var onEdit: () -> Void
+    var onLongPress: (() -> Void)? = nil
 
     private var backgroundColor: Color {
         if let colorHex = category.color {
@@ -54,15 +55,14 @@ struct CategoryCard: View {
                     .background(Theme.Colors.background.opacity(0.5))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Theme.Colors.textTertiary)
+            .buttonStyle(.borderless)
         }
         .padding(Theme.Spacing.lg)
         .background(backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
+        .onLongPressGesture(minimumDuration: 2.0) {
+            onLongPress?()
+        }
     }
 
     private var itemsWord: String {

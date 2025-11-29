@@ -9,6 +9,7 @@ struct CategoryFormView: View {
     @State private var name: String
     @State private var selectedIcon: String
     @State private var selectedColor: String
+    @State private var showingDeleteConfirmation = false
 
     init(category: Category?) {
         self.category = category
@@ -110,6 +111,27 @@ struct CategoryFormView: View {
                             .background(Color(hex: selectedColor).opacity(0.15))
                             .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
                         }
+
+                        // Delete Button (only for editing)
+                        if category != nil {
+                            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                                Button {
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    HStack {
+                                        Spacer()
+                                        Text("Удалить категорию")
+                                            .font(Theme.Typography.body)
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                    }
+                                    .padding(Theme.Spacing.md)
+                                    .background(Theme.Colors.error)
+                                    .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+                                }
+                            }
+                            .padding(.top, Theme.Spacing.xl)
+                        }
                     }
                     .padding(Theme.Spacing.lg)
                 }
@@ -130,7 +152,21 @@ struct CategoryFormView: View {
                     .disabled(name.isEmpty)
                 }
             }
+            .alert("Удалить категорию?", isPresented: $showingDeleteConfirmation) {
+                Button("Отмена", role: .cancel) { }
+                Button("Удалить", role: .destructive) {
+                    deleteCategory()
+                }
+            } message: {
+                Text("Все заготовки в этой категории также будут удалены. Это действие нельзя отменить.")
+            }
         }
+    }
+
+    private func deleteCategory() {
+        guard let category = category else { return }
+        repository.deleteCategory(category.id)
+        dismiss()
     }
 
     private func saveCategory() {

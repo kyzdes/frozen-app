@@ -1,6 +1,6 @@
 import Foundation
+import Combine
 
-@MainActor
 class DataRepository: ObservableObject {
     @Published var categories: [Category] = []
     @Published var items: [Item] = []
@@ -117,6 +117,18 @@ class DataRepository: ObservableObject {
     func updateItemQuantity(_ itemId: String, delta: Int) {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
         items[index].packagesCount = max(0, items[index].packagesCount + delta)
+        saveItems()
+    }
+
+    func updateItemPackagesCount(_ itemId: String, delta: Int) {
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+        items[index].packagesCount = max(0, items[index].packagesCount + delta)
+        saveItems()
+    }
+
+    func updateItemItemsCount(_ itemId: String, delta: Int) {
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+        items[index].itemsCount = max(0, items[index].itemsCount + delta)
         saveItems()
     }
 

@@ -4,7 +4,8 @@ struct ItemRow: View {
     let item: Item
     var onEdit: () -> Void
     var onDelete: () -> Void
-    var onUpdateQuantity: (Int) -> Void
+    var onUpdatePackagesCount: (Int) -> Void
+    var onUpdateItemsCount: (Int) -> Void
 
     private var expirationColor: Color {
         if item.isExpired {
@@ -99,33 +100,77 @@ struct ItemRow: View {
             }
 
             // Quantity Controls
-            HStack(spacing: Theme.Spacing.sm) {
-                Button {
-                    onUpdateQuantity(-1)
-                } label: {
-                    Image(systemName: "minus")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 32, height: 32)
-                        .background(Theme.Colors.background)
-                        .clipShape(Circle())
+            VStack(alignment: .trailing, spacing: Theme.Spacing.sm) {
+                // Packages Controls
+                HStack(spacing: Theme.Spacing.xs) {
+                    Text("Уп.")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.textSecondary)
+                        .frame(width: 28, alignment: .trailing)
+
+                    Button {
+                        onUpdatePackagesCount(-1)
+                    } label: {
+                        Image(systemName: "minus")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 28, height: 28)
+                            .background(Theme.Colors.background)
+                            .clipShape(Circle())
+                    }
+                    .disabled(item.packagesCount == 0)
+
+                    Text("\(item.packagesCount)")
+                        .font(Theme.Typography.subheadline)
+                        .foregroundColor(Theme.Colors.textPrimary)
+                        .frame(width: 28)
+
+                    Button {
+                        onUpdatePackagesCount(1)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 28, height: 28)
+                            .background(Theme.Colors.background)
+                            .clipShape(Circle())
+                    }
                 }
-                .disabled(item.packagesCount == 0)
 
-                Text("\(item.packagesCount)")
-                    .font(Theme.Typography.body)
-                    .foregroundColor(Theme.Colors.textPrimary)
-                    .frame(width: 32)
+                // Items Controls
+                HStack(spacing: Theme.Spacing.xs) {
+                    Text("Шт.")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.textSecondary)
+                        .frame(width: 28, alignment: .trailing)
 
-                Button {
-                    onUpdateQuantity(1)
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 32, height: 32)
-                        .background(Theme.Colors.background)
-                        .clipShape(Circle())
+                    Button {
+                        onUpdateItemsCount(-1)
+                    } label: {
+                        Image(systemName: "minus")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 28, height: 28)
+                            .background(Theme.Colors.background)
+                            .clipShape(Circle())
+                    }
+                    .disabled(item.itemsCount == 0)
+
+                    Text("\(item.itemsCount)")
+                        .font(Theme.Typography.subheadline)
+                        .foregroundColor(Theme.Colors.textPrimary)
+                        .frame(width: 28)
+
+                    Button {
+                        onUpdateItemsCount(1)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 28, height: 28)
+                            .background(Theme.Colors.background)
+                            .clipShape(Circle())
+                    }
                 }
             }
         }
@@ -163,7 +208,8 @@ struct ItemRow: View {
             ),
             onEdit: {},
             onDelete: {},
-            onUpdateQuantity: { _ in }
+            onUpdatePackagesCount: { _ in },
+            onUpdateItemsCount: { _ in }
         )
 
         ItemRow(
@@ -177,7 +223,8 @@ struct ItemRow: View {
             ),
             onEdit: {},
             onDelete: {},
-            onUpdateQuantity: { _ in }
+            onUpdatePackagesCount: { _ in },
+            onUpdateItemsCount: { _ in }
         )
     }
     .padding()
