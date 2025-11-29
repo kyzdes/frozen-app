@@ -6,6 +6,7 @@ struct CategoryListView: View {
     @State private var showingAddCategory = false
     @State private var editingCategory: Category?
     @State private var editMode: EditMode = .inactive
+    @State private var expandedCategories: Set<String> = []
 
     var body: some View {
         NavigationStack {
@@ -43,14 +44,33 @@ struct CategoryListView: View {
                         // Header Section
                         Section {
                             VStack(alignment: .leading, spacing: 8) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "snowflake")
-                                        .font(.largeTitle)
-                                        .foregroundColor(Theme.Colors.primary)
+                                HStack {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "snowflake")
+                                            .font(.largeTitle)
+                                            .foregroundColor(Theme.Colors.primary)
 
-                                    Text("Морозилка")
-                                        .font(Theme.Typography.largeTitle)
-                                        .foregroundColor(Theme.Colors.textPrimary)
+                                        Text("Морозилка")
+                                            .font(Theme.Typography.largeTitle)
+                                            .foregroundColor(Theme.Colors.textPrimary)
+                                    }
+
+                                    Spacer()
+
+                                    // Expand/Collapse All Button
+                                    Button {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            if expandedCategories.count == repository.categories.count {
+                                                expandedCategories.removeAll()
+                                            } else {
+                                                expandedCategories = Set(repository.categories.map { $0.id })
+                                            }
+                                        }
+                                    } label: {
+                                        Text(expandedCategories.count == repository.categories.count ? "Свернуть все" : "Развернуть все")
+                                            .font(Theme.Typography.caption)
+                                            .foregroundColor(Theme.Colors.primary)
+                                    }
                                 }
 
                                 Text("\(totalItems) \(itemsWord) в \(repository.categories.count) \(categoriesWord)")
@@ -65,9 +85,11 @@ struct CategoryListView: View {
                         // Categories Section
                         Section {
                             ForEach(repository.categories) { category in
-                                NavigationLink(value: category) {
+                                VStack(spacing: 0) {
+                                    // Category Card
                                     CategoryCard(
                                         category: category,
+                                        isExpanded: expandedCategories.contains(category.id),
                                         onEdit: { editingCategory = category },
                                         onLongPress: {
                                             let impact = UIImpactFeedbackGenerator(style: .medium)
@@ -77,6 +99,57 @@ struct CategoryListView: View {
                                             }
                                         }
                                     )
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            if expandedCategories.contains(category.id) {
+                                                expandedCategories.remove(category.id)
+                                            } else {
+                                                expandedCategories.insert(category.id)
+                                            }
+                                        }
+                                    }
+
+                                    // Expanded Items
+                                    if expandedCategories.contains(category.id) {
+                                        let items = repository.getItems(for: category.id)
+
+                                        VStack(spacing: Theme.Spacing.sm) {
+                                            if !items.isEmpty {
+                                                ForEach(items) { item in
+                                                    ItemRow(
+                                                        item: item,
+                                                        onEdit: { },
+                                                        onDelete: { repository.deleteItem(item.id) },
+                                                        onUpdatePackagesCount: { delta in
+                                                            repository.updateItemPackagesCount(item.id, delta: delta)
+                                                        },
+                                                        onUpdateItemsCount: { delta in
+                                                            repository.updateItemItemsCount(item.id, delta: delta)
+                                                        }
+                                                    )
+                                                }
+                                            }
+
+                                            // View All / Add Button
+                                            NavigationLink(value: category) {
+                                                HStack {
+                                                    Spacer()
+                                                    Text(items.isEmpty ? "Добавить +" : "Открыть полный список")
+                                                        .font(Theme.Typography.body)
+                                                        .foregroundColor(Theme.Colors.primary)
+                                                    if !items.isEmpty {
+                                                        Image(systemName: "arrow.right")
+                                                            .font(.system(size: 12, weight: .semibold))
+                                                            .foregroundColor(Theme.Colors.primary)
+                                                    }
+                                                    Spacer()
+                                                }
+                                                .padding(.vertical, Theme.Spacing.md)
+                                            }
+                                        }
+                                        .padding(.top, Theme.Spacing.md)
+                                    }
                                 }
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)

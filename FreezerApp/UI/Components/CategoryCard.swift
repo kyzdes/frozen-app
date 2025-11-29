@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CategoryCard: View {
     let category: Category
+    var isExpanded: Bool = false
     var onEdit: () -> Void
     var onLongPress: (() -> Void)? = nil
 
@@ -43,6 +44,12 @@ struct CategoryCard: View {
             }
 
             Spacer()
+
+            // Expand/Collapse Indicator
+            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Theme.Colors.textTertiary)
+                .frame(width: 20, height: 20)
 
             // Edit Button
             Button {
