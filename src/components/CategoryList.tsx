@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Plus, Snowflake } from 'lucide-react';
 import { Category } from '../App';
 import { CategoryCard } from './CategoryCard';
@@ -8,15 +9,46 @@ interface CategoryListProps {
   onAddCategory: () => void;
   onEditCategory: (category: Category) => void;
   onDeleteCategory: (categoryId: string) => void;
+  onReorderCategories: (categories: Category[]) => void;
 }
 
-export function CategoryList({ 
-  categories, 
-  onCategorySelect, 
+export function CategoryList({
+  categories,
+  onCategorySelect,
   onAddCategory,
   onEditCategory,
-  onDeleteCategory 
+  onDeleteCategory,
+  onReorderCategories
 }: CategoryListProps) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (index: number) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => {
+    if (draggedIndex === null) return;
+
+    const newCategories = [...categories];
+    const [draggedCategory] = newCategories.splice(draggedIndex, 1);
+    newCategories.splice(index, 0, draggedCategory);
+
+    onReorderCategories(newCategories);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <div className="pb-24">
       {/* Header */}
@@ -32,13 +64,20 @@ export function CategoryList({
 
       {/* Categories List */}
       <div className="px-4 space-y-2">
-        {categories.map((category) => (
+        {categories.map((category, index) => (
           <CategoryCard
             key={category.id}
             category={category}
+            index={index}
+            isDragging={draggedIndex === index}
+            isDragOver={dragOverIndex === index}
             onSelect={onCategorySelect}
             onEdit={onEditCategory}
             onDelete={onDeleteCategory}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
           />
         ))}
       </div>
