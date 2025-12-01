@@ -7,6 +7,7 @@ class DataRepository: ObservableObject {
 
     private let categoriesKey = "freezer-categories"
     private let itemsKey = "freezer-items"
+    private let notificationService = NotificationService.shared
 
     init() {
         loadData()
@@ -99,6 +100,7 @@ class DataRepository: ObservableObject {
         items.append(item)
         saveItems()
         updateCategoryCounts()
+        scheduleNotifications()
     }
 
     func updateItem(_ item: Item) {
@@ -106,9 +108,11 @@ class DataRepository: ObservableObject {
         items[index] = item
         saveItems()
         updateCategoryCounts()
+        scheduleNotifications()
     }
 
     func deleteItem(_ itemId: String) {
+        notificationService.cancelNotifications(for: itemId)
         items.removeAll { $0.id == itemId }
         saveItems()
         updateCategoryCounts()
@@ -143,5 +147,13 @@ class DataRepository: ObservableObject {
         saveCategories()
         saveItems()
         updateCategoryCounts()
+        scheduleNotifications()
+    }
+
+    // MARK: - Notifications
+    private func scheduleNotifications() {
+        Task {
+            await notificationService.scheduleNotifications(for: items)
+        }
     }
 }

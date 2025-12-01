@@ -29,8 +29,11 @@ struct SettingsView: View {
     @State private var exportedFileURL: URL?
     @State private var exportDocument: BackupDocument?
     @AppStorage("appearanceMode") private var appearanceMode: String = AppearanceMode.system.rawValue
+    @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
+    @AppStorage("notificationDaysData") private var notificationDaysData: Data = try! JSONEncoder().encode([3, 7, 14])
 
     private let backupService = BackupService.shared
+    private let notificationService = NotificationService.shared
 
     var body: some View {
         NavigationStack {
@@ -78,6 +81,52 @@ struct SettingsView: View {
                     Text("Оформление")
                 } footer: {
                     Text("Выберите тему оформления приложения")
+                }
+
+                // MARK: - Notifications Section
+                Section {
+                    Toggle("Уведомления о сроках", isOn: $notificationsEnabled)
+                        .font(Theme.Typography.body)
+                        .onChange(of: notificationsEnabled) { _, newValue in
+                            if newValue {
+                                requestNotificationPermission()
+                            } else {
+                                notificationService.removeAllPendingNotificationRequests()
+                            }
+                        }
+
+                    if notificationsEnabled {
+                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                            Text("Напоминать за:")
+                                .font(Theme.Typography.subheadline)
+                                .foregroundColor(Theme.Colors.textSecondary)
+
+                            ForEach([3, 7, 14], id: \.self) { days in
+                                Toggle("\(days) \(daysWord(days))", isOn: Binding(
+                                    get: { notificationDays.contains(days) },
+                                    set: { isOn in
+                                        if isOn {
+                                            var updated = notificationDays
+                                            if !updated.contains(days) {
+                                                updated.append(days)
+                                                updated.sort()
+                                                updateNotificationDays(updated)
+                                            }
+                                        } else {
+                                            var updated = notificationDays
+                                            updated.removeAll { $0 == days }
+                                            updateNotificationDays(updated)
+                                        }
+                                    }
+                                ))
+                                .font(Theme.Typography.body)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Уведомления")
+                } footer: {
+                    Text("Получайте напоминания о заготовках, срок годности которых скоро истекает")
                 }
 
                 // MARK: - iCloud Section
@@ -270,6 +319,50 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    // MARK: - Notifications
+
+    private var notificationDays: [Int] {
+        guard let days = try? JSONDecoder().decode([Int].self, from: notificationDaysData) else {
+            return [3, 7, 14]
+        }
+        return days
+    }
+
+    private func updateNotificationDays(_ days: [Int]) {
+        guard let data = try? JSONEncoder().encode(days) else { return }
+        notificationDaysData = data
+        notificationService.notificationDays = days
+
+        // Обновляем уведомления
+        Task {
+            await notificationService.scheduleNotifications(for: repository.items)
+        }
+    }
+
+    private func requestNotificationPermission() {
+        Task {
+            do {
+                let granted = try await notificationService.requestAuthorization()
+                if granted {
+                    await notificationService.scheduleNotifications(for: repository.items)
+                } else {
+                    notificationsEnabled = false
+                    errorMessage = "Разрешите уведомления в настройках iOS"
+                    showError = true
+                }
+            } catch {
+                errorMessage = "Не удалось запросить разрешение на уведомления"
+                showError = true
+            }
+        }
+    }
+
+    private func daysWord(_ count: Int) -> String {
+        if count % 10 == 1 && count % 100 != 11 { return "день" }
+        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
+        return "дней"
     }
 }
 

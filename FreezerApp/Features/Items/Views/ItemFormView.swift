@@ -25,7 +25,7 @@ struct ItemFormView: View {
         _itemsCount = State(initialValue: item?.itemsCount ?? 1)
         _shelfNumber = State(initialValue: item?.shelfNumber ?? 1)
         _freezeDate = State(initialValue: item?.freezeDate ?? Date())
-        _expirationDate = State(initialValue: item?.expirationDate ?? Calendar.current.date(byAdding: .month, value: 6, to: Date())!)
+        _expirationDate = State(initialValue: item?.expirationDate ?? Calendar.current.date(byAdding: .year, value: 1, to: Date())!)
         _notes = State(initialValue: item?.notes ?? "")
     }
 
