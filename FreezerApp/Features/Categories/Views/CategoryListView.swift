@@ -260,6 +260,8 @@ struct CategoryListView: View {
                         showingSettings = true
                     } label: {
                         Label("Настройки", systemImage: "gear")
+                            .font(.title3)
+                            .imageScale(.large)
                     }
 
                     Spacer()
@@ -268,6 +270,8 @@ struct CategoryListView: View {
                         showingAddCategory = true
                     } label: {
                         Label("Добавить", systemImage: "plus")
+                            .font(.title3)
+                            .imageScale(.large)
                     }
                     .tint(Theme.Colors.primary)
                 }

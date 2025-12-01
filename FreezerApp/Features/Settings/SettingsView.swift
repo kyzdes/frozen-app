@@ -96,30 +96,32 @@ struct SettingsView: View {
                         }
 
                     if notificationsEnabled {
-                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
                             Text("Напоминать за:")
                                 .font(Theme.Typography.subheadline)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
-                            ForEach([3, 7, 14], id: \.self) { days in
-                                Toggle("\(days) \(daysWord(days))", isOn: Binding(
-                                    get: { notificationDays.contains(days) },
-                                    set: { isOn in
-                                        if isOn {
-                                            var updated = notificationDays
-                                            if !updated.contains(days) {
-                                                updated.append(days)
-                                                updated.sort()
+                            VStack(spacing: Theme.Spacing.md) {
+                                ForEach([3, 7, 14], id: \.self) { days in
+                                    Toggle("\(days) \(daysWord(days))", isOn: Binding(
+                                        get: { notificationDays.contains(days) },
+                                        set: { isOn in
+                                            if isOn {
+                                                var updated = notificationDays
+                                                if !updated.contains(days) {
+                                                    updated.append(days)
+                                                    updated.sort()
+                                                    updateNotificationDays(updated)
+                                                }
+                                            } else {
+                                                var updated = notificationDays
+                                                updated.removeAll { $0 == days }
                                                 updateNotificationDays(updated)
                                             }
-                                        } else {
-                                            var updated = notificationDays
-                                            updated.removeAll { $0 == days }
-                                            updateNotificationDays(updated)
                                         }
-                                    }
-                                ))
-                                .font(Theme.Typography.body)
+                                    ))
+                                    .font(Theme.Typography.body)
+                                }
                             }
                         }
                     }
