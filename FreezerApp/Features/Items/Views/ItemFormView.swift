@@ -14,6 +14,7 @@ struct ItemFormView: View {
     @State private var freezeDate: Date
     @State private var expirationDate: Date
     @State private var notes: String
+    @State private var showDeleteConfirmation = false
 
     init(item: Item?, categoryId: String) {
         self.item = item
@@ -79,6 +80,22 @@ struct ItemFormView: View {
                             .font(Theme.Typography.body)
                             .frame(minHeight: 100)
                     }
+
+                    // Delete Button (only for editing)
+                    if item != nil {
+                        Section {
+                            Button(role: .destructive) {
+                                showDeleteConfirmation = true
+                            } label: {
+                                HStack {
+                                    Spacer()
+                                    Text("Удалить заготовку")
+                                        .font(Theme.Typography.body)
+                                    Spacer()
+                                }
+                            }
+                        }
+                    }
                 }
                 .scrollContentBackground(.hidden)
             }
@@ -97,6 +114,14 @@ struct ItemFormView: View {
                     }
                     .disabled(name.isEmpty)
                 }
+            }
+            .alert("Удалить заготовку?", isPresented: $showDeleteConfirmation) {
+                Button("Отмена", role: .cancel) { }
+                Button("Удалить", role: .destructive) {
+                    deleteItem()
+                }
+            } message: {
+                Text("Это действие нельзя отменить")
             }
         }
     }
@@ -126,6 +151,13 @@ struct ItemFormView: View {
             repository.addItem(newItem)
         }
         dismiss()
+    }
+
+    private func deleteItem() {
+        if let itemToDelete = item {
+            repository.deleteItem(itemToDelete.id)
+            dismiss()
+        }
     }
 }
 

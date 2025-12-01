@@ -5,8 +5,13 @@ struct CategoryListView: View {
     @EnvironmentObject var repository: DataRepository
     @State private var showingAddCategory = false
     @State private var editingCategory: Category?
+    @State private var editingItem: Item?
     @State private var editMode: EditMode = .inactive
     @State private var expandedCategories: Set<String> = []
+    @State private var showingSettings = false
+    @State private var searchQuery = ""
+    @State private var selectedShelf: Int?
+    @AppStorage("appearanceMode") private var appearanceMode: String = "Системная"
 
     var body: some View {
         NavigationStack {
@@ -82,9 +87,61 @@ struct CategoryListView: View {
                             .listRowSeparator(.hidden)
                         }
 
+                        // Search & Filter Section
+                        Section {
+                            VStack(spacing: Theme.Spacing.md) {
+                                // Search Bar
+                                HStack {
+                                    Image(systemName: "magnifyingglass")
+                                        .foregroundColor(Theme.Colors.textSecondary)
+                                    TextField("Поиск по заготовкам", text: $searchQuery)
+                                        .font(Theme.Typography.body)
+                                    if !searchQuery.isEmpty {
+                                        Button {
+                                            searchQuery = ""
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(Theme.Colors.textSecondary)
+                                        }
+                                    }
+                                }
+                                .padding(Theme.Spacing.md)
+                                .background(Theme.Colors.cardBackground)
+                                .cornerRadius(Theme.CornerRadius.md)
+
+                                // Shelf Filter
+                                if !uniqueShelves.isEmpty {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: Theme.Spacing.sm) {
+                                            ForEach(uniqueShelves, id: \.self) { shelf in
+                                                Button {
+                                                    if selectedShelf == shelf {
+                                                        selectedShelf = nil
+                                                    } else {
+                                                        selectedShelf = shelf
+                                                    }
+                                                } label: {
+                                                    Text("Полка \(shelf)")
+                                                        .font(Theme.Typography.callout)
+                                                        .padding(.horizontal, Theme.Spacing.md)
+                                                        .padding(.vertical, Theme.Spacing.sm)
+                                                        .background(selectedShelf == shelf ? Theme.Colors.primary : Theme.Colors.cardBackground)
+                                                        .foregroundColor(selectedShelf == shelf ? .white : Theme.Colors.textPrimary)
+                                                        .cornerRadius(Theme.CornerRadius.md)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .listRowInsets(EdgeInsets(top: Theme.Spacing.sm, leading: Theme.Spacing.lg, bottom: Theme.Spacing.md, trailing: Theme.Spacing.lg))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                        }
+
                         // Categories Section
                         Section {
-                            ForEach(repository.categories) { category in
+                            ForEach(filteredCategories) { category in
                                 VStack(spacing: 0) {
                                     // Category Card
                                     CategoryCard(
@@ -119,7 +176,7 @@ struct CategoryListView: View {
                                                 ForEach(items) { item in
                                                     ItemRow(
                                                         item: item,
-                                                        onEdit: { },
+                                                        onEdit: { editingItem = item },
                                                         onDelete: { repository.deleteItem(item.id) },
                                                         onUpdatePackagesCount: { delta in
                                                             repository.updateItemPackagesCount(item.id, delta: delta)
@@ -193,30 +250,27 @@ struct CategoryListView: View {
                         }
                     }
                 }
-
-                // Add Button
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button {
-                            showingAddCategory = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 56, height: 56)
-                                .background(Theme.Colors.primary)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-                        }
-                        .padding(.trailing, Theme.Spacing.lg)
-                        .padding(.bottom, Theme.Spacing.xl)
-                    }
-                }
             }
             .navigationDestination(for: Category.self) { category in
                 ItemListView(category: category)
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Label("Настройки", systemImage: "gear")
+                    }
+
+                    Spacer()
+
+                    Button {
+                        showingAddCategory = true
+                    } label: {
+                        Label("Добавить", systemImage: "plus")
+                    }
+                    .tint(Theme.Colors.primary)
+                }
             }
             .sheet(isPresented: $showingAddCategory) {
                 CategoryFormView(category: nil)
@@ -224,6 +278,22 @@ struct CategoryListView: View {
             .sheet(item: $editingCategory) { category in
                 CategoryFormView(category: category)
             }
+            .sheet(item: $editingItem) { item in
+                ItemFormView(item: item, categoryId: item.categoryId)
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+                    .environmentObject(repository)
+            }
+            .preferredColorScheme(selectedColorScheme)
+        }
+    }
+
+    private var selectedColorScheme: ColorScheme? {
+        switch appearanceMode {
+        case "Светлая": return .light
+        case "Темная": return .dark
+        default: return nil // System
         }
     }
 
@@ -260,6 +330,38 @@ struct CategoryListView: View {
         if count % 10 == 1 && count % 100 != 11 { return "категории" }
         if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "категориях" }
         return "категориях"
+    }
+
+    // MARK: - Search & Filter
+
+    private var allItems: [Item] {
+        repository.items
+    }
+
+    private var uniqueShelves: [Int] {
+        Array(Set(allItems.map { $0.shelfNumber })).sorted()
+    }
+
+    private var filteredItems: [Item] {
+        allItems.filter { item in
+            let matchesSearch = searchQuery.isEmpty ||
+                item.name.localizedCaseInsensitiveContains(searchQuery) ||
+                (item.notes?.localizedCaseInsensitiveContains(searchQuery) ?? false)
+            let matchesShelf = selectedShelf == nil || item.shelfNumber == selectedShelf
+            return matchesSearch && matchesShelf
+        }
+    }
+
+    private var filteredCategories: [Category] {
+        if searchQuery.isEmpty && selectedShelf == nil {
+            return repository.categories
+        }
+
+        let categoryIds = Set(filteredItems.map { $0.categoryId })
+        return repository.categories.filter { category in
+            categoryIds.contains(category.id) ||
+            category.name.localizedCaseInsensitiveContains(searchQuery)
+        }
     }
 }
 

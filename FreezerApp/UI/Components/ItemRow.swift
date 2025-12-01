@@ -177,20 +177,6 @@ struct ItemRow: View {
         .padding(Theme.Spacing.lg)
         .background(Theme.Colors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("Удалить", systemImage: "trash")
-            }
-
-            Button {
-                onEdit()
-            } label: {
-                Label("Править", systemImage: "pencil")
-            }
-            .tint(Theme.Colors.primary)
-        }
     }
 }
 

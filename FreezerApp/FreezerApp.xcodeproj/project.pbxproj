@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A40F4D872EDE042E00416944 /* BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40F4D862EDE042E00416944 /* BackupService.swift */; };
+		A40F4D8A2EDE045F00416944 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40F4D882EDE045F00416944 /* SettingsView.swift */; };
 		A4CB16052EDB399C00FF4558 /* DataRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CB15F32EDB399B00FF4558 /* DataRepository.swift */; };
 		A4CB16062EDB399C00FF4558 /* ItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CB16002EDB399B00FF4558 /* ItemRow.swift */; };
 		A4CB16072EDB399C00FF4558 /* CategoryFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CB15F62EDB399B00FF4558 /* CategoryFormView.swift */; };
@@ -21,6 +23,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A40F4D862EDE042E00416944 /* BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupService.swift; sourceTree = "<group>"; };
+		A40F4D882EDE045F00416944 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A4CB15E02EDB395100FF4558 /* FreezerApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreezerApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A4CB15EE2EDB399B00FF4558 /* FreezerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreezerApp.swift; sourceTree = "<group>"; };
 		A4CB15F02EDB399B00FF4558 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
@@ -54,6 +58,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A40F4D892EDE045F00416944 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A40F4D882EDE045F00416944 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		A4CB15D72EDB395100FF4558 = {
 			isa = PBXGroup;
 			children = (
@@ -102,6 +114,7 @@
 		A4CB15F52EDB399B00FF4558 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				A40F4D862EDE042E00416944 /* BackupService.swift */,
 				A4CB15F22EDB399B00FF4558 /* Models */,
 				A4CB15F42EDB399B00FF4558 /* Repository */,
 			);
@@ -147,6 +160,7 @@
 			children = (
 				A4CB15F92EDB399B00FF4558 /* Categories */,
 				A4CB15FD2EDB399B00FF4558 /* Items */,
+				A40F4D892EDE045F00416944 /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -256,12 +270,14 @@
 				A4CB16072EDB399C00FF4558 /* CategoryFormView.swift in Sources */,
 				A4CB16082EDB399C00FF4558 /* CategoryCard.swift in Sources */,
 				A4CB16092EDB399C00FF4558 /* ItemFormView.swift in Sources */,
+				A40F4D872EDE042E00416944 /* BackupService.swift in Sources */,
 				A4CB160A2EDB399C00FF4558 /* CategoryListView.swift in Sources */,
 				A4CB160B2EDB399C00FF4558 /* ItemListView.swift in Sources */,
 				A4CB160C2EDB399C00FF4558 /* Theme.swift in Sources */,
 				A4CB160D2EDB399C00FF4558 /* Category.swift in Sources */,
 				A4CB160E2EDB399C00FF4558 /* FreezerApp.swift in Sources */,
 				A4CB160F2EDB399C00FF4558 /* Item.swift in Sources */,
+				A40F4D8A2EDE045F00416944 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -135,4 +135,13 @@ class DataRepository: ObservableObject {
     func getItems(for categoryId: String) -> [Item] {
         items.filter { $0.categoryId == categoryId }
     }
+
+    // MARK: - Data Import/Export
+    func replaceAllData(categories: [Category], items: [Item]) {
+        self.categories = categories
+        self.items = items
+        saveCategories()
+        saveItems()
+        updateCategoryCounts()
+    }
 }
