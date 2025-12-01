@@ -137,17 +137,17 @@ struct SettingsView: View {
                         Image(systemName: "icloud")
                             .foregroundColor(backupService.checkiCloudStatus() ? Theme.Colors.success : Theme.Colors.textSecondary)
                             .frame(width: 24)
-                        Text("Статус iCloud")
+                        Text("Синхронизация iCloud")
                             .foregroundColor(Theme.Colors.textPrimary)
                         Spacer()
-                        Text(backupService.checkiCloudStatus() ? "Включен" : "Выключен")
+                        Text(backupService.checkiCloudStatus() ? "Включена" : "Выключена")
                             .foregroundColor(Theme.Colors.textSecondary)
                             .font(Theme.Typography.callout)
                     }
                 } header: {
-                    Text("iCloud")
+                    Text("Синхронизация")
                 } footer: {
-                    Text("При включенном iCloud данные автоматически сохраняются в облаке")
+                    Text("При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID")
                 }
 
                 // MARK: - Data Section

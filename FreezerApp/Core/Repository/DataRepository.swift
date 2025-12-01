@@ -9,8 +9,37 @@ class DataRepository: ObservableObject {
     private let itemsKey = "freezer-items"
     private let notificationService = NotificationService.shared
 
+    // iCloud Key-Value Store для синхронизации между устройствами
+    private let cloudStore = NSUbiquitousKeyValueStore.default
+
     init() {
+        setupCloudSync()
         loadData()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - iCloud Sync Setup
+    private func setupCloudSync() {
+        // Подписка на изменения из iCloud
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(cloudStoreDidChange),
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: cloudStore
+        )
+
+        // Запуск синхронизации
+        cloudStore.synchronize()
+    }
+
+    @objc private func cloudStoreDidChange(_ notification: Notification) {
+        // Получаем изменения из iCloud и обновляем локальные данные
+        DispatchQueue.main.async { [weak self] in
+            self?.loadData()
+        }
     }
 
     // MARK: - Load & Save
@@ -32,29 +61,59 @@ class DataRepository: ObservableObject {
     }
 
     private func loadCategories() {
-        guard let data = UserDefaults.standard.data(forKey: categoriesKey),
-              let decoded = try? JSONDecoder().decode([Category].self, from: data) else {
+        // Пробуем загрузить из iCloud
+        if let data = cloudStore.data(forKey: categoriesKey),
+           let decoded = try? JSONDecoder().decode([Category].self, from: data) {
+            categories = decoded
             return
         }
-        categories = decoded
+
+        // Фолбэк на локальное хранилище (для миграции старых данных)
+        if let data = UserDefaults.standard.data(forKey: categoriesKey),
+           let decoded = try? JSONDecoder().decode([Category].self, from: data) {
+            categories = decoded
+            // Сохраняем в iCloud для миграции
+            saveCategories()
+            return
+        }
     }
 
     private func saveCategories() {
         guard let encoded = try? JSONEncoder().encode(categories) else { return }
+        // Сохраняем в iCloud
+        cloudStore.set(encoded, forKey: categoriesKey)
+        // Также сохраняем локально как резервную копию
         UserDefaults.standard.set(encoded, forKey: categoriesKey)
+        // Запускаем синхронизацию
+        cloudStore.synchronize()
     }
 
     private func loadItems() {
-        guard let data = UserDefaults.standard.data(forKey: itemsKey),
-              let decoded = try? JSONDecoder().decode([Item].self, from: data) else {
+        // Пробуем загрузить из iCloud
+        if let data = cloudStore.data(forKey: itemsKey),
+           let decoded = try? JSONDecoder().decode([Item].self, from: data) {
+            items = decoded
             return
         }
-        items = decoded
+
+        // Фолбэк на локальное хранилище (для миграции старых данных)
+        if let data = UserDefaults.standard.data(forKey: itemsKey),
+           let decoded = try? JSONDecoder().decode([Item].self, from: data) {
+            items = decoded
+            // Сохраняем в iCloud для миграции
+            saveItems()
+            return
+        }
     }
 
     private func saveItems() {
         guard let encoded = try? JSONEncoder().encode(items) else { return }
+        // Сохраняем в iCloud
+        cloudStore.set(encoded, forKey: itemsKey)
+        // Также сохраняем локально как резервную копию
         UserDefaults.standard.set(encoded, forKey: itemsKey)
+        // Запускаем синхронизацию
+        cloudStore.synchronize()
     }
 
     private func updateCategoryCounts() {
