@@ -16,6 +16,7 @@ export function ItemForm({ item, categoryId, onBack, onSave }: ItemFormProps) {
   const [shelf, setShelf] = useState(item?.shelf.toString() || '1');
   const [freezeDate, setFreezeDate] = useState(item?.freezeDate || new Date().toISOString().split('T')[0]);
   const [expirationDate, setExpirationDate] = useState(item?.expirationDate || '');
+  const [notes, setNotes] = useState(item?.notes || '');
   const [photo, setPhoto] = useState(item?.photo || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +45,7 @@ export function ItemForm({ item, categoryId, onBack, onSave }: ItemFormProps) {
       shelf: parseInt(shelf) || 1,
       freezeDate,
       expirationDate,
+      notes: notes.trim() || undefined,
       photo: photo || undefined,
       categoryId
     };
@@ -200,6 +202,20 @@ export function ItemForm({ item, categoryId, onBack, onSave }: ItemFormProps) {
               className="w-full text-[17px] text-[#1C1C1E] bg-[#F2F7FA] rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#5B9FD3]/30"
             />
           </div>
+        </div>
+
+        {/* Notes */}
+        <div className="bg-white rounded-xl p-4">
+          <label className="block text-[13px] text-[#8E8E93] mb-3 uppercase tracking-wide">
+            Заметки (необязательно)
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Например: из домашней курицы, с укропом"
+            rows={3}
+            className="w-full text-[17px] text-[#1C1C1E] bg-[#F2F7FA] rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#5B9FD3]/30 resize-none"
+          />
         </div>
       </div>
     </div>

@@ -102,7 +102,7 @@ export function ItemRow({ item, onEdit, onDelete, onUpdateQuantity }: ItemRowPro
             </div>
 
             {/* Expiration Status */}
-            <div className="flex items-center gap-1.5 text-[13px]">
+            <div className="flex items-center gap-1.5 text-[13px] mb-1">
               {isExpired ? (
                 <>
                   <AlertCircle className="w-3.5 h-3.5 text-[#FF3B30]" />
@@ -120,6 +120,13 @@ export function ItemRow({ item, onEdit, onDelete, onUpdateQuantity }: ItemRowPro
                 </>
               )}
             </div>
+
+            {/* Notes */}
+            {item.notes && (
+              <div className="text-[13px] text-[#8E8E93] mt-1">
+                {item.notes}
+              </div>
+            )}
           </div>
 
           {/* Quantity Controls */}
