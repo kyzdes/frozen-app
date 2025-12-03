@@ -12,6 +12,7 @@ export interface Item {
   shelf: number;
   freezeDate: string;
   expirationDate: string;
+  notes?: string;
   photo?: string;
   categoryId: string;
 }
@@ -19,7 +20,10 @@ export interface Item {
 export interface Category {
   id: string;
   name: string;
+  icon?: string;
+  color?: string;
   itemCount: number;
+  sortOrder?: number;
 }
 
 type Screen = 'home' | 'category' | 'item-form';
@@ -43,9 +47,9 @@ export default function App() {
     } else {
       // Initialize with sample data
       const initialCategories = [
-        { id: '1', name: 'Овощи', itemCount: 0 },
-        { id: '2', name: 'Мясо', itemCount: 0 },
-        { id: '3', name: 'Ягоды', itemCount: 0 },
+        { id: '1', name: 'Овощи', icon: '🥬', color: '#34C759', itemCount: 0, sortOrder: 0 },
+        { id: '2', name: 'Мясо', icon: '🍖', color: '#FF3B30', itemCount: 0, sortOrder: 1 },
+        { id: '3', name: 'Ягоды', icon: '🫐', color: '#AF52DE', itemCount: 0, sortOrder: 2 },
       ];
       setCategories(initialCategories);
       localStorage.setItem('freezer-categories', JSON.stringify(initialCategories));
@@ -115,11 +119,11 @@ export default function App() {
     }));
   };
 
-  const handleAddCategory = (name: string) => {
+  const handleAddCategory = (name: string, icon: string, color: string) => {
     if (editingCategory) {
       // Edit existing category
-      setCategories(categories.map(cat => 
-        cat.id === editingCategory.id ? { ...cat, name } : cat
+      setCategories(categories.map(cat =>
+        cat.id === editingCategory.id ? { ...cat, name, icon, color } : cat
       ));
       setEditingCategory(null);
     } else {
@@ -127,7 +131,10 @@ export default function App() {
       const newCategory = {
         id: Date.now().toString(),
         name,
-        itemCount: 0
+        icon,
+        color,
+        itemCount: 0,
+        sortOrder: categories.length
       };
       setCategories([...categories, newCategory]);
     }
@@ -142,6 +149,14 @@ export default function App() {
   const handleDeleteCategory = (categoryId: string) => {
     setCategories(categories.filter(cat => cat.id !== categoryId));
     setItems(items.filter(item => item.categoryId !== categoryId));
+  };
+
+  const handleReorderCategories = (newCategories: Category[]) => {
+    const categoriesWithOrder = newCategories.map((cat, index) => ({
+      ...cat,
+      sortOrder: index
+    }));
+    setCategories(categoriesWithOrder);
   };
 
   const handleBack = () => {
@@ -174,6 +189,7 @@ export default function App() {
             }}
             onEditCategory={handleEditCategory}
             onDeleteCategory={handleDeleteCategory}
+            onReorderCategories={handleReorderCategories}
           />
         )}
         

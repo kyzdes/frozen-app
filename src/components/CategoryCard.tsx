@@ -1,15 +1,34 @@
-import { ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { ChevronRight, Edit2, Trash2, GripVertical } from 'lucide-react';
 import { useState } from 'react';
 import { Category } from '../App';
 
 interface CategoryCardProps {
   category: Category;
+  index: number;
+  isDragging: boolean;
+  isDragOver: boolean;
   onSelect: (category: Category) => void;
   onEdit: (category: Category) => void;
   onDelete: (categoryId: string) => void;
+  onDragStart: (index: number) => void;
+  onDragOver: (index: number) => void;
+  onDrop: (index: number) => void;
+  onDragEnd: () => void;
 }
 
-export function CategoryCard({ category, onSelect, onEdit, onDelete }: CategoryCardProps) {
+export function CategoryCard({
+  category,
+  index,
+  isDragging,
+  isDragOver,
+  onSelect,
+  onEdit,
+  onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd
+}: CategoryCardProps) {
   const [touchStart, setTouchStart] = useState(0);
   const [showActions, setShowActions] = useState(false);
 
@@ -57,20 +76,40 @@ export function CategoryCard({ category, onSelect, onEdit, onDelete }: CategoryC
 
       {/* Card Content */}
       <div
-        className={`bg-white rounded-xl p-4 flex items-center gap-3 active:bg-[#F2F2F7] transition-all ${
+        draggable
+        onDragStart={() => onDragStart(index)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          onDragOver(index);
+        }}
+        onDrop={() => onDrop(index)}
+        onDragEnd={onDragEnd}
+        className={`rounded-xl p-4 flex items-center gap-3 transition-all cursor-move ${
           showActions ? '-translate-x-40' : 'translate-x-0'
-        }`}
+        } ${isDragging ? 'opacity-50 scale-95' : ''} ${isDragOver ? 'scale-105 ring-2 ring-[#5B9FD3]' : ''}`}
+        style={{ backgroundColor: `${category.color || '#34C759'}15` }}
         onClick={() => !showActions && onSelect(category)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Drag Handle */}
+        <GripVertical className="w-5 h-5 text-[#C7C7CC] flex-shrink-0 cursor-grab active:cursor-grabbing" />
+
+        {/* Icon */}
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+          style={{ backgroundColor: category.color || '#34C759' }}
+        >
+          {category.icon || '📦'}
+        </div>
+
         <div className="flex-1 min-w-0">
           <h3 className="text-[17px] text-[#1C1C1E] mb-1">{category.name}</h3>
           <p className="text-[15px] text-[#8E8E93]">
             {category.itemCount} {getItemsWord(category.itemCount)}
           </p>
         </div>
-        
+
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -80,7 +119,7 @@ export function CategoryCard({ category, onSelect, onEdit, onDelete }: CategoryC
         >
           <Edit2 className="w-4 h-4 text-[#5B9FD3]" />
         </button>
-        
+
         <ChevronRight className="w-5 h-5 text-[#C7C7CC] flex-shrink-0" />
       </div>
     </div>
