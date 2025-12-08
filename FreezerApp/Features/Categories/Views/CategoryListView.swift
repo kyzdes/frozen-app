@@ -194,12 +194,6 @@ struct CategoryListView: View {
                     Capsule()
                         .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
                 )
-                .toolbar {
-                    ToolbarItem(placement: .keyboard) {
-                        Button("Готово") { searchFocused = false }
-                            .font(Theme.Typography.subheadline)
-                    }
-                }
     }
 
     private var header: some View {
