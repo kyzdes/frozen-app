@@ -164,7 +164,7 @@ struct CategoryListView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(Theme.Colors.textSecondary)
 
-            TextField("Поиск по заготовкам", text: $searchQuery)
+            TextField("Поиск", text: $searchQuery)
                 .font(Theme.Typography.body)
 
             if !searchQuery.isEmpty {
