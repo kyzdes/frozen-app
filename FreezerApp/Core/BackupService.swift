@@ -86,8 +86,8 @@ final class BackupService {
     }
 
     /// Создание временного файла для экспорта
-    func createExportFile(categories: [Category], items: [Item]) throws -> URL {
-        let data = try exportData(categories: categories, items: items)
+    func createExportFile(categories: [Category], items: [Item], history: [HistoryEvent]) throws -> URL {
+        let data = try exportData(categories: categories, items: items, history: history)
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HHmmss"
