@@ -1,7 +1,9 @@
 import SwiftUI
+import UIKit
 
 @main
 struct FreezerApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var repository = DataRepository()
 
     init() {
@@ -19,12 +21,29 @@ struct FreezerApp: App {
             // Отмечаем, что миграция выполнена
             UserDefaults.standard.set(true, forKey: migrationKey)
         }
+
+        configureFrameRate()
     }
 
     var body: some Scene {
         WindowGroup {
             CategoryListView()
                 .environmentObject(repository)
+                .onChange(of: scenePhase) { newPhase in
+                    if newPhase == .active {
+                        configureFrameRate()
+                    }
+                }
         }
     }
+}
+
+// MARK: - ProMotion Support
+
+private func configureFrameRate() {
+    guard #available(iOS 15.0, *) else { return }
+    let preferredRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
+    UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .forEach { $0.preferredFrameRateRange = preferredRange }
 }
