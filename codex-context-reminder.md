@@ -46,11 +46,12 @@
   - `SettingsView` — экспорт/импорт (file exporter/importer), выбор темы (system/light/dark via @AppStorage `appearanceMode`), переключатель уведомлений + выбор дней, статус iCloud, статистика данных, версия приложения, ссылка на сайт.
 
 ## Замечания/полезное
-- Текущая Git-ветка: `ver-0.5` (есть локальные .DS_Store и `FreezerApp.xcodeproj/...UserInterfaceState.xcuserstate` в незакоммиченном состоянии).
+- Текущая Git-ветка: `ver-0.7` (в дереве есть локальные .DS_Store и `FreezerApp.xcodeproj/...UserInterfaceState.xcuserstate`, не коммитить).
 - Нет `.gitignore`; следи, чтобы не закоммитить временные macOS/Xcode файлы.
-- Референсные ключи хранилища: `freezer-categories`, `freezer-items`, `notificationsEnabled`, `notificationDaysData` (iOS), `appearanceMode`.
-- Начальные данные (web/iOS) идентичные 3 категории, что помогает быстро поднять UI без ввода.
-- История по iOS UI (главный экран категорий): ItemRow в компактном режиме без свайпов, без нижних кнопок и без summary-строки; показывается только полка (бейдж) и счетчики `+/-`. Свайпы включаются только в детальном списке (`ItemListView`). Для корректной работы `+/-` внутри `List` используется `.buttonStyle(.borderless)` на кнопках.
+- Референсные ключи хранилища: `freezer-categories`, `freezer-items`, `freezer-history`, `notificationsEnabled`, `notificationDaysData` (iOS), `appearanceMode`.
+- Начальные данные (web/iOS) идентичные 3 категории.
+- История по iOS UI (главный экран категорий): ItemRow в компактном режиме без свайпов/нижних кнопок/summary; показывается только полка (бейдж) и счетчики `+/-`. Свайпы включаются только в детальном списке (`ItemListView`). Для корректной работы `+/-` внутри списков используется `.buttonStyle(.borderless)`.
+- Журнал истории: логируются создание заготовки и изменение количеств; хранится в iCloud/UserDefaults (`freezer-history`), экспортируется/импортируется через BackupService. Экран истории доступен с главного экрана (кнопка часов), есть сортировка и фильтр по дате.
 
 ## Быстрый старт / сборка
 - Web: `npm install` → `npm run dev` (http://localhost:3000) → `npm run build` (в `build/`).
