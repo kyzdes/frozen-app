@@ -9,6 +9,7 @@ struct CategoryListView: View {
     @State private var editMode: EditMode = .inactive
     @State private var expandedCategories: Set<String> = []
     @State private var showingSettings = false
+    @State private var showingHistory = false
     @State private var searchQuery = ""
     @State private var selectedShelf: Int?
     @AppStorage("appearanceMode") private var appearanceMode: String = "Системная"
@@ -43,6 +44,16 @@ struct CategoryListView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .bottomBar) {
                     Button {
+                        showingHistory = true
+                    } label: {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.title2)
+                            .imageScale(.large)
+                    }
+
+                    Spacer(minLength: Theme.Spacing.md)
+
+                    Button {
                         showingSettings = true
                     } label: {
                         Image(systemName: "gear")
@@ -75,6 +86,10 @@ struct CategoryListView: View {
             }
             .sheet(item: $editingItem) { item in
                 ItemFormView(item: item, categoryId: item.categoryId)
+            }
+            .sheet(isPresented: $showingHistory) {
+                HistorySheetView(history: repository.history)
+                    .presentationDetents([.medium, .large])
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
@@ -333,6 +348,117 @@ private struct PlainDisclosureStyle: DisclosureGroupStyle {
                 configuration.content
             }
         }
+    }
+}
+
+// MARK: - History Sheet
+
+private struct HistorySheetView: View {
+    let history: [HistoryEvent]
+
+    private var grouped: [(key: String, events: [HistoryEvent])] {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+
+        let groupedDict = Dictionary(grouping: history.sorted(by: { $0.timestamp > $1.timestamp })) { event in
+            formatter.string(from: event.timestamp)
+        }
+        return groupedDict
+            .map { ($0.key, $0.value) }
+            .sorted { $0.0 > $1.0 }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if history.isEmpty {
+                    Section {
+                        VStack(spacing: Theme.Spacing.md) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 48))
+                                .foregroundColor(Theme.Colors.textTertiary)
+                            Text("История пуста")
+                                .font(Theme.Typography.body)
+                                .foregroundColor(Theme.Colors.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, Theme.Spacing.xl)
+                        .listRowSeparator(.hidden)
+                    }
+                } else {
+                    ForEach(grouped, id: \.key) { section in
+                        Section(section.key) {
+                            ForEach(section.events) { event in
+                                HistoryRow(event: event)
+                            }
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("История")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+private struct HistoryRow: View {
+    let event: HistoryEvent
+
+    private var subtitle: String {
+        switch event.type {
+        case .itemAdded:
+            return "Добавлено"
+        case .quantityChanged:
+            var parts: [String] = []
+            if let delta = event.packagesDelta, delta != 0 {
+                parts.append("Уп: \(delta > 0 ? "+" : "")\(delta) → \(event.newPackages ?? 0)")
+            }
+            if let delta = event.itemsDelta, delta != 0 {
+                parts.append("Шт: \(delta > 0 ? "+" : "")\(delta) → \(event.newItems ?? 0)")
+            }
+            return parts.isEmpty ? "Изменено" : parts.joined(separator: ", ")
+        }
+    }
+
+    private var iconName: String {
+        switch event.type {
+        case .itemAdded:
+            return "plus.circle.fill"
+        case .quantityChanged:
+            return "arrow.up.arrow.down.circle.fill"
+        }
+    }
+
+    private var timeString: String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: event.timestamp)
+    }
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.md) {
+            Image(systemName: iconName)
+                .foregroundColor(Theme.Colors.primary)
+                .font(.system(size: 20, weight: .semibold))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(event.itemName)
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.textPrimary)
+
+                Text(subtitle)
+                    .font(Theme.Typography.subheadline)
+                    .foregroundColor(Theme.Colors.textSecondary)
+            }
+
+            Spacer()
+
+            Text(timeString)
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.textSecondary)
+        }
+        .padding(.vertical, Theme.Spacing.sm)
     }
 }
 
