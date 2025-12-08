@@ -12,6 +12,7 @@ struct CategoryListView: View {
     @State private var showingHistory = false
     @State private var searchQuery = ""
     @State private var selectedShelf: Int?
+    @FocusState private var searchFocused: Bool
     @AppStorage("appearanceMode") private var appearanceMode: String = "Системная"
     private let expansionAnimation = Animation.spring(response: 0.32, dampingFraction: 0.85, blendDuration: 0.12)
 
@@ -36,6 +37,9 @@ struct CategoryListView: View {
                             }
                         }
                     }
+                }
+                .onTapGesture {
+                    searchFocused = false
                 }
             }
             .navigationDestination(for: Category.self) { category in
@@ -169,10 +173,12 @@ struct CategoryListView: View {
 
             TextField("Поиск", text: $searchQuery)
                 .font(Theme.Typography.body)
+                .focused($searchFocused)
 
             if !searchQuery.isEmpty {
                 Button {
                     searchQuery = ""
+                    searchFocused = false
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(Theme.Colors.textSecondary)
@@ -182,12 +188,18 @@ struct CategoryListView: View {
         }
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
-        .background(Theme.Colors.cardBackground)
-        .clipShape(Capsule())
-        .overlay(
-            Capsule()
-                .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
-        )
+                .background(Theme.Colors.cardBackground)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
+                )
+                .toolbar {
+                    ToolbarItem(placement: .keyboard) {
+                        Button("Готово") { searchFocused = false }
+                            .font(Theme.Typography.subheadline)
+                    }
+                }
     }
 
     private var header: some View {
