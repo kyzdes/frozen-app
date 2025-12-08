@@ -209,11 +209,6 @@ struct CategoryFormView: View {
             return
         }
 
-        // Тримминг выбранного эмодзи
-        if let first = customEmoji.trimmingCharacters(in: .whitespacesAndNewlines).first {
-            selectedIcon = String(first)
-        }
-
         if let existing = category {
             var updated = existing
             updated.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
