@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import QuartzCore
 
 @main
 struct FreezerApp: App {
@@ -41,9 +42,14 @@ struct FreezerApp: App {
 // MARK: - ProMotion Support
 
 private func configureFrameRate() {
+    #if os(iOS)
     guard #available(iOS 15.0, *) else { return }
     let preferredRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
     UIApplication.shared.connectedScenes
         .compactMap { $0 as? UIWindowScene }
-        .forEach { $0.preferredFrameRateRange = preferredRange }
+        .forEach { (windowScene: UIWindowScene) in
+            // Используем KVC, чтобы не падать при отсутствии API на рантайме/старых SDK
+            (windowScene as NSObject).setValue(preferredRange, forKey: "preferredFrameRateRange")
+        }
+    #endif
 }
