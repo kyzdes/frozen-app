@@ -266,7 +266,8 @@ struct SettingsView: View {
         do {
             let data = try backupService.exportData(
                 categories: repository.categories,
-                items: repository.items
+                items: repository.items,
+                history: repository.history
             )
             print("✅ Export data created, size: \(data.count) bytes")
             exportDocument = BackupDocument(data: data)
@@ -309,7 +310,7 @@ struct SettingsView: View {
 
     private func importBackup(_ backup: BackupService.BackupData) {
         // Replace all data
-        repository.replaceAllData(categories: backup.categories, items: backup.items)
+        repository.replaceAllData(categories: backup.categories, items: backup.items, history: backup.history)
 
         pendingBackup = nil
         dismiss()

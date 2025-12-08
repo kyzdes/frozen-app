@@ -5,9 +5,11 @@ import OSLog
 class DataRepository: ObservableObject {
     @Published var categories: [Category] = []
     @Published var items: [Item] = []
+    @Published var history: [HistoryEvent] = []
 
     private let categoriesKey = "freezer-categories"
     private let itemsKey = "freezer-items"
+    private let historyKey = "freezer-history"
     private let notificationService = NotificationService.shared
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.freezerapp", category: "DataRepository")
 
@@ -48,6 +50,7 @@ class DataRepository: ObservableObject {
     private func loadData() {
         loadCategories()
         loadItems()
+        loadHistory()
 
         // Initialize with sample data if empty
         if categories.isEmpty {
@@ -126,6 +129,31 @@ class DataRepository: ObservableObject {
         logger.info("Saved \(self.items.count) items")
     }
 
+    private func loadHistory() {
+        if let data = cloudStore.data(forKey: historyKey),
+           let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
+            history = decoded
+            return
+        }
+
+        if let data = UserDefaults.standard.data(forKey: historyKey),
+           let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
+            history = decoded
+            saveHistory()
+        }
+    }
+
+    private func saveHistory() {
+        guard let encoded = try? JSONEncoder().encode(history) else {
+            logger.error("Failed to encode history")
+            return
+        }
+        cloudStore.set(encoded, forKey: historyKey)
+        UserDefaults.standard.set(encoded, forKey: historyKey)
+        cloudStore.synchronize()
+        logger.info("Saved \(self.history.count) history events")
+    }
+
     private func updateCategoryCounts() {
         for index in categories.indices {
             let count = items.filter { $0.categoryId == categories[index].id }.count
@@ -170,6 +198,7 @@ class DataRepository: ObservableObject {
         saveItems()
         updateCategoryCounts()
         scheduleNotifications()
+        addHistoryEvent(.itemAdded(item: item))
     }
 
     func updateItem(_ item: Item) {
@@ -189,14 +218,32 @@ class DataRepository: ObservableObject {
 
     func updateItemPackagesCount(_ itemId: String, delta: Int) {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+        let oldValue = items[index].packagesCount
         items[index].packagesCount = max(0, items[index].packagesCount + delta)
+        let newValue = items[index].packagesCount
         saveItems()
+        addHistoryEvent(.quantityChanged(
+            item: items[index],
+            packagesDelta: newValue - oldValue,
+            itemsDelta: nil,
+            newPackages: newValue,
+            newItems: items[index].itemsCount
+        ))
     }
 
     func updateItemItemsCount(_ itemId: String, delta: Int) {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+        let oldValue = items[index].itemsCount
         items[index].itemsCount = max(0, items[index].itemsCount + delta)
+        let newValue = items[index].itemsCount
         saveItems()
+        addHistoryEvent(.quantityChanged(
+            item: items[index],
+            packagesDelta: nil,
+            itemsDelta: newValue - oldValue,
+            newPackages: items[index].packagesCount,
+            newItems: newValue
+        ))
     }
 
     func getItems(for categoryId: String) -> [Item] {
@@ -204,11 +251,13 @@ class DataRepository: ObservableObject {
     }
 
     // MARK: - Data Import/Export
-    func replaceAllData(categories: [Category], items: [Item]) {
+    func replaceAllData(categories: [Category], items: [Item], history: [HistoryEvent] = []) {
         self.categories = categories
         self.items = items
+        self.history = history
         saveCategories()
         saveItems()
+        saveHistory()
         updateCategoryCounts()
         scheduleNotifications()
     }
@@ -218,5 +267,94 @@ class DataRepository: ObservableObject {
         Task {
             await notificationService.scheduleNotifications(for: items)
         }
+    }
+
+    // MARK: - History
+    private func addHistoryEvent(_ event: HistoryEvent) {
+        history.append(event)
+        // Ограничиваем размер журнала
+        let limit = 500
+        if history.count > limit {
+            history = Array(history.suffix(limit))
+        }
+        saveHistory()
+    }
+}
+
+// MARK: - History Events
+
+enum HistoryEventType: String, Codable {
+    case itemAdded
+    case quantityChanged
+}
+
+struct HistoryEvent: Identifiable, Codable, Hashable {
+    let id: String
+    let type: HistoryEventType
+    let itemId: String
+    let categoryId: String
+    let itemName: String
+    let timestamp: Date
+    let packagesDelta: Int?
+    let itemsDelta: Int?
+    let newPackages: Int?
+    let newItems: Int?
+
+    init(
+        id: String = UUID().uuidString,
+        type: HistoryEventType,
+        itemId: String,
+        categoryId: String,
+        itemName: String,
+        timestamp: Date = Date(),
+        packagesDelta: Int? = nil,
+        itemsDelta: Int? = nil,
+        newPackages: Int? = nil,
+        newItems: Int? = nil
+    ) {
+        self.id = id
+        self.type = type
+        self.itemId = itemId
+        self.categoryId = categoryId
+        self.itemName = itemName
+        self.timestamp = timestamp
+        self.packagesDelta = packagesDelta
+        self.itemsDelta = itemsDelta
+        self.newPackages = newPackages
+        self.newItems = newItems
+    }
+}
+
+extension HistoryEvent {
+    static func itemAdded(item: Item) -> HistoryEvent {
+        HistoryEvent(
+            type: .itemAdded,
+            itemId: item.id,
+            categoryId: item.categoryId,
+            itemName: item.name,
+            packagesDelta: item.packagesCount,
+            itemsDelta: item.itemsCount,
+            newPackages: item.packagesCount,
+            newItems: item.itemsCount
+        )
+    }
+
+    static func quantityChanged(
+        item: Item,
+        packagesDelta: Int?,
+        itemsDelta: Int?,
+        newPackages: Int,
+        newItems: Int
+    ) -> HistoryEvent {
+        HistoryEvent(
+            type: .quantityChanged,
+            itemId: item.id,
+            categoryId: item.categoryId,
+            itemName: item.name,
+            packagesDelta: packagesDelta,
+            itemsDelta: itemsDelta,
+            newPackages: newPackages,
+            newItems: newItems
+        )
     }
 }
