@@ -220,9 +220,20 @@ struct CategoryListView: View {
                         }
                     }
                 } label: {
-                    Text(expandedCategories.count == repository.categories.count ? "Свернуть все" : "Развернуть все")
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.primary)
+                    HStack(spacing: Theme.Spacing.xs) {
+                        Image(systemName: expandedCategories.count == repository.categories.count ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(expandedCategories.count == repository.categories.count ? "Свернуть все" : "Развернуть все")
+                            .font(Theme.Typography.subheadline)
+                    }
+                    .padding(.horizontal, Theme.Spacing.md)
+                    .padding(.vertical, Theme.Spacing.sm)
+                    .background(Theme.Colors.cardBackground)
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
+                    )
                 }
             }
 
