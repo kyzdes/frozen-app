@@ -415,19 +415,6 @@ private struct HistoryView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("История")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    withAnimation {
-                        selectedDate = nil
-                    }
-                } label: {
-                    Text("Сбросить фильтр")
-                        .font(Theme.Typography.caption)
-                }
-                .disabled(selectedDate == nil)
-            }
-        }
     }
 
     private var controls: some View {
@@ -464,15 +451,17 @@ private struct HistoryView: View {
                     .labelsHidden()
                     .disabled(false)
 
-                    if selectedDate != nil {
-                        Button {
-                            withAnimation { selectedDate = nil }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(Theme.Colors.textSecondary)
+                    Button {
+                        withAnimation { selectedDate = nil }
+                    } label: {
+                        HStack(spacing: Theme.Spacing.xs) {
+                            Image(systemName: "arrow.uturn.backward.circle")
+                            Text("Сбросить")
                         }
-                        .buttonStyle(.plain)
+                        .font(Theme.Typography.caption)
                     }
+                    .buttonStyle(.borderless)
+                    .disabled(selectedDate == nil)
                 }
             }
         }
