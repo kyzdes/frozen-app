@@ -9,6 +9,8 @@ struct CategoryFormView: View {
     @State private var name: String
     @State private var selectedIcon: String
     @State private var selectedColor: String
+    @State private var customEmoji: String = ""
+    @State private var customColor: Color = .clear
     @State private var showingDeleteConfirmation = false
     @State private var showValidation = false
 
@@ -17,6 +19,12 @@ struct CategoryFormView: View {
         _name = State(initialValue: category?.name ?? "")
         _selectedIcon = State(initialValue: category?.icon ?? "🥬")
         _selectedColor = State(initialValue: category?.color ?? "#34C759")
+        if let colorHex = category?.color {
+            _customColor = State(initialValue: Color(hex: colorHex))
+        } else {
+            _customColor = State(initialValue: Color(hex: "#34C759"))
+        }
+        _customEmoji = State(initialValue: category?.icon ?? "")
     }
 
     private var nameError: String? {
@@ -63,10 +71,32 @@ struct CategoryFormView: View {
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
+                            HStack(spacing: Theme.Spacing.sm) {
+                                TextField("Ваш эмодзи", text: $customEmoji)
+                                    .font(.system(size: 28))
+                                    .multilineTextAlignment(.center)
+                                    .frame(width: 70, height: 44)
+                                    .background(Theme.Colors.cardBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+                                    .onChange(of: customEmoji) { _, newValue in
+                                        if let first = newValue.trimmingCharacters(in: .whitespacesAndNewlines).first {
+                                            selectedIcon = String(first)
+                                            customEmoji = String(first)
+                                        } else {
+                                            customEmoji = ""
+                                        }
+                                    }
+
+                                Text("Или выберите из палитры ниже")
+                                    .font(Theme.Typography.subheadline)
+                                    .foregroundColor(Theme.Colors.textSecondary)
+                            }
+
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: Theme.Spacing.sm) {
                                 ForEach(Theme.presetIcons, id: \.self) { icon in
                                     Button {
                                         selectedIcon = icon
+                                        customEmoji = icon
                                     } label: {
                                         Text(icon)
                                             .font(.system(size: 32))
@@ -85,10 +115,23 @@ struct CategoryFormView: View {
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
+                            HStack(spacing: Theme.Spacing.sm) {
+                                ColorPicker("Свой цвет", selection: $customColor, supportsOpacity: false)
+                                    .labelsHidden()
+                                    .onChange(of: customColor) { _, newValue in
+                                        selectedColor = newValue.toHexString() ?? selectedColor
+                                    }
+
+                                Text(selectedColor)
+                                    .font(Theme.Typography.caption)
+                                    .foregroundColor(Theme.Colors.textSecondary)
+                            }
+
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: Theme.Spacing.sm) {
                                 ForEach(Theme.presetColors, id: \.self) { colorHex in
                                     Button {
                                         selectedColor = colorHex
+                                        customColor = Color(hex: colorHex)
                                     } label: {
                                         Color(hex: colorHex)
                                             .frame(maxWidth: .infinity)
@@ -192,6 +235,11 @@ struct CategoryFormView: View {
         guard nameError == nil else {
             UINotificationFeedbackGenerator().notificationOccurred(.error)
             return
+        }
+
+        // Тримминг выбранного эмодзи
+        if let first = customEmoji.trimmingCharacters(in: .whitespacesAndNewlines).first {
+            selectedIcon = String(first)
         }
 
         if let existing = category {
