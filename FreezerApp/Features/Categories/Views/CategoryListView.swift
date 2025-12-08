@@ -94,10 +94,6 @@ struct CategoryListView: View {
             .sheet(item: $editingItem) { item in
                 ItemFormView(item: item, categoryId: item.categoryId)
             }
-            .sheet(isPresented: $showingHistory) {
-                HistorySheetView(history: repository.history)
-                    .presentationDetents([.medium, .large])
-            }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
                     .environmentObject(repository)
