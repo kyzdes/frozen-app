@@ -4,71 +4,71 @@ struct CategoryCard: View {
     let category: Category
     var isExpanded: Bool = false
     var onEdit: () -> Void
+    var onDelete: () -> Void
     var onLongPress: (() -> Void)? = nil
 
     private var backgroundColor: Color {
-        if let colorHex = category.color {
-            return Color(hex: colorHex).opacity(0.15)
-        }
-        return Theme.Colors.primary.opacity(0.15)
+        Theme.Colors.cardBackground
     }
 
     private var iconBackgroundColor: Color {
-        if let colorHex = category.color {
-            return Color(hex: colorHex)
-        }
-        return Theme.Colors.primary
+        if let colorHex = category.color { return Color(hex: colorHex) }
+        return Theme.Colors.primary.opacity(0.9)
     }
 
     var body: some View {
         HStack(spacing: Theme.Spacing.md) {
-            // Icon
             ZStack {
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.md)
-                    .fill(iconBackgroundColor)
-                    .frame(width: 48, height: 48)
+                RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
+                    .fill(iconBackgroundColor.opacity(0.18))
+                    .frame(width: 52, height: 52)
 
                 Text(category.icon ?? "📦")
-                    .font(.system(size: 24))
+                    .font(.system(size: 24, weight: .medium))
             }
 
-            // Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(category.name)
-                    .font(Theme.Typography.body)
+                    .font(Theme.Typography.headline)
                     .foregroundColor(Theme.Colors.textPrimary)
 
                 Text("\(category.itemCount) \(itemsWord)")
-                    .font(Theme.Typography.subheadline)
+                    .font(Theme.Typography.footnote)
                     .foregroundColor(Theme.Colors.textSecondary)
             }
 
             Spacer()
 
-            // Expand/Collapse Indicator
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+            Image(systemName: "chevron.\(isExpanded ? "up" : "down")")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(Theme.Colors.textTertiary)
-                .frame(width: 20, height: 20)
+                .rotationEffect(.degrees(isExpanded ? 0 : 0))
+                .animation(.easeInOut(duration: 0.2), value: isExpanded)
 
-            // Edit Button
-            Button {
-                onEdit()
+            Menu {
+                Button("Редактировать", systemImage: "pencil", action: onEdit)
+                Button("Удалить", role: .destructive, action: onDelete)
             } label: {
-                Image(systemName: "pencil")
-                    .font(.system(size: 16))
-                    .foregroundColor(Theme.Colors.primary)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.Colors.background.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Theme.Colors.textSecondary)
             }
             .buttonStyle(.borderless)
         }
-        .padding(Theme.Spacing.lg)
+        .padding(.vertical, Theme.Spacing.md)
+        .padding(.horizontal, Theme.Spacing.lg)
         .background(backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
+                .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
+        )
         .onLongPressGesture(minimumDuration: 0.6) {
             onLongPress?()
+        }
+        .contextMenu {
+            Button("Редактировать", systemImage: "pencil", action: onEdit)
+            Button("Удалить", role: .destructive, action: onDelete)
         }
     }
 
@@ -84,11 +84,13 @@ struct CategoryCard: View {
     VStack(spacing: 16) {
         CategoryCard(
             category: Category(name: "Овощи", icon: "🥬", color: "#34C759", itemCount: 12),
-            onEdit: {}
+            onEdit: {},
+            onDelete: {}
         )
         CategoryCard(
             category: Category(name: "Мясо", icon: "🍖", color: "#FF3B30", itemCount: 8),
-            onEdit: {}
+            onEdit: {},
+            onDelete: {}
         )
     }
     .padding()

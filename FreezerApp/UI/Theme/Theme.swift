@@ -4,19 +4,21 @@ import UIKit
 struct Theme {
     // MARK: - Colors
     struct Colors {
-        static let primary = Color(light: "#5B9FD3", dark: "#64A9DC")
-        static let background = Color(light: "#F2F7FA", dark: "#000000")
-        static let cardBackground = Color(light: "#FFFFFF", dark: "#1C1C1E")
-        static let textPrimary = Color(light: "#1C1C1E", dark: "#FFFFFF")
-        static let textSecondary = Color(light: "#8E8E93", dark: "#8E8E93")
-        static let textTertiary = Color(light: "#C7C7CC", dark: "#48484A")
-        static let success = Color(hex: "#34C759")
-        static let warning = Color(hex: "#FF9500")
-        static let error = Color(hex: "#FF3B30")
-        static let purple = Color(hex: "#AF52DE")
-        static let pink = Color(hex: "#FF2D55")
-        static let yellow = Color(hex: "#FFCC00")
-        static let cyan = Color(hex: "#5AC8FA")
+        // Системные цвета дают более нативный вид на iOS
+        static let primary = Color(.systemBlue)
+        static let background = Color(.systemGroupedBackground)
+        static let cardBackground = Color(.secondarySystemGroupedBackground)
+        static let textPrimary = Color(.label)
+        static let textSecondary = Color(.secondaryLabel)
+        static let textTertiary = Color(.tertiaryLabel)
+        static let separator = Color(.separator)
+        static let success = Color(.systemGreen)
+        static let warning = Color(.systemOrange)
+        static let error = Color(.systemRed)
+        static let purple = Color(.systemPurple)
+        static let pink = Color(.systemPink)
+        static let yellow = Color(.systemYellow)
+        static let cyan = Color(.systemTeal)
     }
 
     // MARK: - Preset Icons & Colors
@@ -35,14 +37,14 @@ struct Theme {
 
     // MARK: - Typography
     struct Typography {
-        static let largeTitle: Font = .system(size: 34, weight: .regular)
-        static let title: Font = .system(size: 28, weight: .semibold)
-        static let headline: Font = .system(size: 17, weight: .semibold)
-        static let body: Font = .system(size: 17, weight: .regular)
-        static let callout: Font = .system(size: 16, weight: .regular)
-        static let subheadline: Font = .system(size: 15, weight: .regular)
-        static let footnote: Font = .system(size: 13, weight: .regular)
-        static let caption: Font = .system(size: 12, weight: .regular)
+        static let largeTitle: Font = .system(.largeTitle, design: .rounded)
+        static let title: Font = .system(.title, design: .rounded)
+        static let headline: Font = .system(.headline, design: .rounded)
+        static let body: Font = .system(.body, design: .rounded)
+        static let callout: Font = .system(.callout, design: .rounded)
+        static let subheadline: Font = .system(.subheadline, design: .rounded)
+        static let footnote: Font = .system(.footnote, design: .rounded)
+        static let caption: Font = .system(.caption, design: .rounded)
     }
 
     // MARK: - Spacing

@@ -46,10 +46,11 @@
   - `SettingsView` — экспорт/импорт (file exporter/importer), выбор темы (system/light/dark via @AppStorage `appearanceMode`), переключатель уведомлений + выбор дней, статус iCloud, статистика данных, версия приложения, ссылка на сайт.
 
 ## Замечания/полезное
-- Текущая Git-ветка: `ver-0.4` (есть локальные .DS_Store и `FreezerApp.xcodeproj/...UserInterfaceState.xcuserstate` в незакоммиченном состоянии).
+- Текущая Git-ветка: `ver-0.5` (есть локальные .DS_Store и `FreezerApp.xcodeproj/...UserInterfaceState.xcuserstate` в незакоммиченном состоянии).
 - Нет `.gitignore`; следи, чтобы не закоммитить временные macOS/Xcode файлы.
 - Референсные ключи хранилища: `freezer-categories`, `freezer-items`, `notificationsEnabled`, `notificationDaysData` (iOS), `appearanceMode`.
 - Начальные данные (web/iOS) идентичные 3 категории, что помогает быстро поднять UI без ввода.
+- История по iOS UI (главный экран категорий): ItemRow в компактном режиме без свайпов, без нижних кнопок и без summary-строки; показывается только полка (бейдж) и счетчики `+/-`. Свайпы включаются только в детальном списке (`ItemListView`). Для корректной работы `+/-` внутри `List` используется `.buttonStyle(.borderless)` на кнопках.
 
 ## Быстрый старт / сборка
 - Web: `npm install` → `npm run dev` (http://localhost:3000) → `npm run build` (в `build/`).

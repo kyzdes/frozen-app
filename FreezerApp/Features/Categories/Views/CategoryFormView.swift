@@ -10,12 +10,20 @@ struct CategoryFormView: View {
     @State private var selectedIcon: String
     @State private var selectedColor: String
     @State private var showingDeleteConfirmation = false
+    @State private var showValidation = false
 
     init(category: Category?) {
         self.category = category
         _name = State(initialValue: category?.name ?? "")
         _selectedIcon = State(initialValue: category?.icon ?? "🥬")
         _selectedColor = State(initialValue: category?.color ?? "#34C759")
+    }
+
+    private var nameError: String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "Введите название" }
+        if trimmed.count < 2 { return "Слишком короткое название" }
+        return nil
     }
 
     var body: some View {
@@ -36,7 +44,17 @@ struct CategoryFormView: View {
                                 .font(Theme.Typography.body)
                                 .padding(Theme.Spacing.md)
                                 .background(Theme.Colors.cardBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Theme.CornerRadius.md)
+                                        .stroke(nameError != nil && showValidation ? Theme.Colors.error : Color.clear, lineWidth: 1)
+                                )
                                 .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+
+                            if let nameError {
+                                Text(nameError)
+                                    .font(Theme.Typography.caption)
+                                    .foregroundColor(Theme.Colors.error)
+                            }
                         }
 
                         // Icon Selector
@@ -149,7 +167,7 @@ struct CategoryFormView: View {
                     Button(category == nil ? "Добавить" : "Сохранить") {
                         saveCategory()
                     }
-                    .disabled(name.isEmpty)
+                    .disabled(nameError != nil)
                 }
             }
             .alert("Удалить категорию?", isPresented: $showingDeleteConfirmation) {
@@ -170,20 +188,27 @@ struct CategoryFormView: View {
     }
 
     private func saveCategory() {
+        showValidation = true
+        guard nameError == nil else {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            return
+        }
+
         if let existing = category {
             var updated = existing
-            updated.name = name
+            updated.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
             updated.icon = selectedIcon
             updated.color = selectedColor
             repository.updateCategory(updated)
         } else {
             let newCategory = Category(
-                name: name,
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 icon: selectedIcon,
                 color: selectedColor
             )
             repository.addCategory(newCategory)
         }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }
 }
