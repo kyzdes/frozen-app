@@ -1,10 +1,7 @@
 import SwiftUI
-import UIKit
-import QuartzCore
 
 @main
 struct FreezerApp: App {
-    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var repository = DataRepository()
 
     init() {
@@ -22,34 +19,12 @@ struct FreezerApp: App {
             // Отмечаем, что миграция выполнена
             UserDefaults.standard.set(true, forKey: migrationKey)
         }
-
-        configureFrameRate()
     }
 
     var body: some Scene {
         WindowGroup {
             CategoryListView()
                 .environmentObject(repository)
-                .onChange(of: scenePhase) { newPhase in
-                    if newPhase == .active {
-                        configureFrameRate()
-                    }
-                }
         }
     }
-}
-
-// MARK: - ProMotion Support
-
-private func configureFrameRate() {
-    #if os(iOS)
-    guard #available(iOS 15.0, *) else { return }
-    let preferredRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
-    UIApplication.shared.connectedScenes
-        .compactMap { $0 as? UIWindowScene }
-        .forEach { (windowScene: UIWindowScene) in
-            // Используем KVC, чтобы не падать при отсутствии API на рантайме/старых SDK
-            (windowScene as NSObject).setValue(preferredRange, forKey: "preferredFrameRateRange")
-        }
-    #endif
 }
