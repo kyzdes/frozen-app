@@ -78,6 +78,13 @@ struct CategoryListView: View {
                     .tint(Theme.Colors.primary)
                 }
             }
+            .background(
+                NavigationLink(
+                    destination: HistoryView(history: repository.history),
+                    isActive: $showingHistory
+                ) { EmptyView() }
+                    .hidden()
+            )
             .sheet(isPresented: $showingAddCategory) {
                 CategoryFormView(category: nil)
             }
@@ -351,53 +358,127 @@ private struct PlainDisclosureStyle: DisclosureGroupStyle {
     }
 }
 
-// MARK: - History Sheet
+// MARK: - History Screen
 
-private struct HistorySheetView: View {
+private struct HistoryView: View {
     let history: [HistoryEvent]
+    @State private var selectedDate: Date? = nil
+    @State private var sortDescending: Bool = true
+
+    private var filteredHistory: [HistoryEvent] {
+        let calendar = Calendar.current
+        let sorted = history.sorted { sortDescending ? $0.timestamp > $1.timestamp : $0.timestamp < $1.timestamp }
+
+        guard let date = selectedDate else { return sorted }
+
+        return sorted.filter { event in
+            calendar.isDate(event.timestamp, inSameDayAs: date)
+        }
+    }
 
     private var grouped: [(key: String, events: [HistoryEvent])] {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
 
-        let groupedDict = Dictionary(grouping: history.sorted(by: { $0.timestamp > $1.timestamp })) { event in
+        let groupedDict = Dictionary(grouping: filteredHistory) { event in
             formatter.string(from: event.timestamp)
         }
         return groupedDict
             .map { ($0.key, $0.value) }
-            .sorted { $0.0 > $1.0 }
+            .sorted { sortDescending ? $0.0 > $1.0 : $0.0 < $1.0 }
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                if history.isEmpty {
-                    Section {
-                        VStack(spacing: Theme.Spacing.md) {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 48))
-                                .foregroundColor(Theme.Colors.textTertiary)
-                            Text("История пуста")
-                                .font(Theme.Typography.body)
-                                .foregroundColor(Theme.Colors.textSecondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, Theme.Spacing.xl)
-                        .listRowSeparator(.hidden)
+        List {
+            controls
+
+            if filteredHistory.isEmpty {
+                Section {
+                    VStack(spacing: Theme.Spacing.md) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 48))
+                            .foregroundColor(Theme.Colors.textTertiary)
+                        Text("История пуста")
+                            .font(Theme.Typography.body)
+                            .foregroundColor(Theme.Colors.textSecondary)
                     }
-                } else {
-                    ForEach(grouped, id: \.key) { section in
-                        Section(section.key) {
-                            ForEach(section.events) { event in
-                                HistoryRow(event: event)
-                            }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, Theme.Spacing.xl)
+                    .listRowSeparator(.hidden)
+                }
+            } else {
+                ForEach(grouped, id: \.key) { section in
+                    Section(section.key) {
+                        ForEach(section.events) { event in
+                            HistoryRow(event: event)
                         }
                     }
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("История")
-            .navigationBarTitleDisplayMode(.inline)
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("История")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    withAnimation {
+                        selectedDate = nil
+                    }
+                } label: {
+                    Text("Сбросить фильтр")
+                        .font(Theme.Typography.caption)
+                }
+                .disabled(selectedDate == nil)
+            }
+        }
+    }
+
+    private var controls: some View {
+        Section {
+            HStack {
+                Text("Сортировка")
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(Theme.Typography.subheadline)
+
+                Spacer()
+
+                Picker("", selection: $sortDescending) {
+                    Text("Новые").tag(true)
+                    Text("Старые").tag(false)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+            }
+
+            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                Text("Фильтр по дате")
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(Theme.Typography.subheadline)
+
+                HStack {
+                    DatePicker(
+                        "",
+                        selection: Binding(
+                            get: { selectedDate ?? Date() },
+                            set: { newValue in selectedDate = newValue }
+                        ),
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .disabled(false)
+
+                    if selectedDate != nil {
+                        Button {
+                            withAnimation { selectedDate = nil }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(Theme.Colors.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
     }
 }
