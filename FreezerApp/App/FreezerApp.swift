@@ -2,7 +2,8 @@ import SwiftUI
 
 @main
 struct FreezerApp: App {
-    @StateObject private var repository = DataRepository()
+    @StateObject private var syncService = SyncService.shared
+    @StateObject private var repository = DataRepository(syncService: .shared)
 
     init() {
         // Миграция: выключаем уведомления по умолчанию для версии 0.4
@@ -25,6 +26,7 @@ struct FreezerApp: App {
         WindowGroup {
             CategoryListView()
                 .environmentObject(repository)
+                .environmentObject(syncService)
         }
     }
 }

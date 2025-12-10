@@ -492,15 +492,20 @@ private struct HistoryRow: View {
         switch event.type {
         case .itemAdded:
             return "Добавлено"
-        case .quantityChanged:
-            var parts: [String] = []
-            if let delta = event.packagesDelta, delta != 0 {
-                parts.append("Уп: \(delta > 0 ? "+" : "")\(delta) → \(event.newPackages ?? 0)")
+        case .itemUpdated:
+            return "Обновлено"
+        case .itemDeleted:
+            return "Удалено"
+        case .packagesChanged:
+            if let delta = event.packagesDelta {
+                return "Упаковки: \(delta > 0 ? "+" : "")\(delta)"
             }
-            if let delta = event.itemsDelta, delta != 0 {
-                parts.append("Шт: \(delta > 0 ? "+" : "")\(delta) → \(event.newItems ?? 0)")
+            return "Упаковки изменены"
+        case .itemsChanged:
+            if let delta = event.itemsDelta {
+                return "Штуки: \(delta > 0 ? "+" : "")\(delta)"
             }
-            return parts.isEmpty ? "Изменено" : parts.joined(separator: ", ")
+            return "Количество изменено"
         }
     }
 
@@ -508,7 +513,11 @@ private struct HistoryRow: View {
         switch event.type {
         case .itemAdded:
             return "plus.circle.fill"
-        case .quantityChanged:
+        case .itemUpdated:
+            return "pencil.circle.fill"
+        case .itemDeleted:
+            return "trash.circle.fill"
+        case .packagesChanged, .itemsChanged:
             return "arrow.up.arrow.down.circle.fill"
         }
     }

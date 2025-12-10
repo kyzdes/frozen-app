@@ -156,7 +156,7 @@ final class BackupService {
 
         // Проверка истории
         let historyItemIds = backup.history.map { $0.itemId }
-        if historyItemIds.contains(where: { !$0.isEmpty == false }) {
+        if historyItemIds.contains(where: { $0?.isEmpty ?? true }) {
             issues.append("Некорректные записи истории")
         }
 

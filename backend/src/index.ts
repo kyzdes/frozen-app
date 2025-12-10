@@ -1,4 +1,5 @@
-import 'dotenv/config';
+// In production, env vars are provided by Docker via env_file
+// For local development, load .env file
 import server from './server.js';
 import db from './config/database.js';
 import logger from './utils/logger.js';

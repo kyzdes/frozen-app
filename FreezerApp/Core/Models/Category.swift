@@ -8,13 +8,19 @@ struct Category: Identifiable, Codable, Hashable {
     var itemCount: Int
     var sortOrder: Int?
 
+    // MARK: - Sync Fields
+    var updatedAt: Date
+    var deletedAt: Date?
+
     init(
         id: String = UUID().uuidString,
         name: String,
         icon: String? = nil,
         color: String? = nil,
         itemCount: Int = 0,
-        sortOrder: Int? = nil
+        sortOrder: Int? = nil,
+        updatedAt: Date = Date(),
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -22,6 +28,8 @@ struct Category: Identifiable, Codable, Hashable {
         self.color = color
         self.itemCount = itemCount
         self.sortOrder = sortOrder
+        self.updatedAt = updatedAt
+        self.deletedAt = deletedAt
     }
 }
 

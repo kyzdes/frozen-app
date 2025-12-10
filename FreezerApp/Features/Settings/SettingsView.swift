@@ -18,6 +18,7 @@ enum AppearanceMode: String, CaseIterable {
 
 struct SettingsView: View {
     @EnvironmentObject var repository: DataRepository
+    @EnvironmentObject var syncService: SyncService
     @Environment(\.dismiss) var dismiss
 
     @State private var showExportPicker = false
@@ -28,6 +29,9 @@ struct SettingsView: View {
     @State private var pendingBackup: BackupService.BackupData?
     @State private var exportedFileURL: URL?
     @State private var exportDocument: BackupDocument?
+    @State private var showCreatePair = false
+    @State private var showJoinPair = false
+    @State private var showLeavePairConfirmation = false
     @AppStorage("appearanceMode") private var appearanceMode: String = AppearanceMode.system.rawValue
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = false
     @AppStorage("notificationDaysData") private var notificationDaysData: Data = try! JSONEncoder().encode([3, 7, 14])
@@ -94,41 +98,119 @@ struct SettingsView: View {
                                 notificationService.removeAllPendingNotificationRequests()
                             }
                         }
-
-                    if notificationsEnabled {
-                        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-                            Text("Напоминать за:")
-                                .font(Theme.Typography.subheadline)
-                                .foregroundColor(Theme.Colors.textSecondary)
-
-                            VStack(spacing: Theme.Spacing.md) {
-                                ForEach([3, 7, 14], id: \.self) { days in
-                                    Toggle("\(days) \(daysWord(days))", isOn: Binding(
-                                        get: { notificationDays.contains(days) },
-                                        set: { isOn in
-                                            if isOn {
-                                                var updated = notificationDays
-                                                if !updated.contains(days) {
-                                                    updated.append(days)
-                                                    updated.sort()
-                                                    updateNotificationDays(updated)
-                                                }
-                                            } else {
-                                                var updated = notificationDays
-                                                updated.removeAll { $0 == days }
-                                                updateNotificationDays(updated)
-                                            }
-                                        }
-                                    ))
-                                    .font(Theme.Typography.body)
-                                }
-                            }
-                        }
-                    }
                 } header: {
                     Text("Уведомления")
                 } footer: {
                     Text("Получайте напоминания о заготовках, срок годности которых скоро истекает")
+                }
+
+                if notificationsEnabled {
+                    Section {
+                        ForEach([3, 7, 14], id: \.self) { days in
+                            Toggle("\(days) \(daysWord(days))", isOn: Binding(
+                                get: { notificationDays.contains(days) },
+                                set: { isOn in
+                                    if isOn {
+                                        var updated = notificationDays
+                                        if !updated.contains(days) {
+                                            updated.append(days)
+                                            updated.sort()
+                                            updateNotificationDays(updated)
+                                        }
+                                    } else {
+                                        var updated = notificationDays
+                                        updated.removeAll { $0 == days }
+                                        updateNotificationDays(updated)
+                                    }
+                                }
+                            ))
+                            .font(Theme.Typography.body)
+                        }
+                    } header: {
+                        Text("Напоминать за")
+                    } footer: {
+                        Text("Выберите, за сколько дней до истечения срока годности отправлять уведомление")
+                    }
+                }
+
+                // MARK: - Sync Section
+                Section {
+                    if syncService.currentPair != nil {
+                        // Connected to pair
+                        HStack(spacing: 12) {
+                            Image(systemName: syncService.syncStatus.iconName)
+                                .foregroundColor(Color(syncService.syncStatus.iconColor))
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Статус синхронизации")
+                                    .foregroundColor(Theme.Colors.textPrimary)
+                                    .font(Theme.Typography.body)
+                                Text(syncService.syncStatus.displayText)
+                                    .foregroundColor(Theme.Colors.textSecondary)
+                                    .font(Theme.Typography.caption)
+                            }
+                            Spacer()
+                        }
+
+                        Button {
+                            Task {
+                                await syncService.syncNow()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .foregroundColor(Theme.Colors.primary)
+                                    .frame(width: 24)
+                                Text("Синхронизировать вручную")
+                                    .foregroundColor(Theme.Colors.textPrimary)
+                            }
+                        }
+
+                        Button(role: .destructive) {
+                            showLeavePairConfirmation = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "xmark.circle")
+                                    .foregroundColor(.red)
+                                    .frame(width: 24)
+                                Text("Покинуть холодильник")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    } else {
+                        // Not connected
+                        Button {
+                            showCreatePair = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                    .foregroundColor(Theme.Colors.primary)
+                                    .frame(width: 24)
+                                Text("Создать общий холодильник")
+                                    .foregroundColor(Theme.Colors.textPrimary)
+                            }
+                        }
+
+                        Button {
+                            showJoinPair = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "link")
+                                    .foregroundColor(Theme.Colors.primary)
+                                    .frame(width: 24)
+                                Text("Подключиться к холодильнику")
+                                    .foregroundColor(Theme.Colors.textPrimary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Синхронизация с партнером")
+                } footer: {
+                    if syncService.currentPair != nil {
+                        Text("Ваши данные синхронизируются с партнером каждые 5 секунд")
+                    } else {
+                        Text("Создайте общий холодильник или подключитесь к существующему для синхронизации данных с партнером")
+                    }
                 }
 
                 // MARK: - iCloud Section
@@ -145,7 +227,7 @@ struct SettingsView: View {
                             .font(Theme.Typography.callout)
                     }
                 } header: {
-                    Text("Синхронизация")
+                    Text("Локальная синхронизация")
                 } footer: {
                     Text("При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID")
                 }
@@ -252,6 +334,22 @@ struct SettingsView: View {
                 allowsMultipleSelection: false
             ) { result in
                 handleImport(result)
+            }
+            .sheet(isPresented: $showCreatePair) {
+                CreatePairView()
+                    .environmentObject(syncService)
+            }
+            .sheet(isPresented: $showJoinPair) {
+                JoinPairView()
+                    .environmentObject(syncService)
+            }
+            .alert("Покинуть холодильник?", isPresented: $showLeavePairConfirmation) {
+                Button("Отмена", role: .cancel) { }
+                Button("Покинуть", role: .destructive) {
+                    leavePair()
+                }
+            } message: {
+                Text("Вы будете отключены от общего холодильника. Локальные данные останутся на устройстве.")
             }
             .preferredColorScheme(AppearanceMode(rawValue: appearanceMode)?.colorScheme)
         }
@@ -366,6 +464,19 @@ struct SettingsView: View {
         if count % 10 == 1 && count % 100 != 11 { return "день" }
         if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
         return "дней"
+    }
+
+    // MARK: - Sync
+
+    private func leavePair() {
+        Task {
+            do {
+                try await syncService.leavePair()
+            } catch {
+                errorMessage = "Не удалось покинуть холодильник: \(error.localizedDescription)"
+                showError = true
+            }
+        }
     }
 }
 
