@@ -195,3 +195,40 @@ class APIClient {
         let message: String
     }
 }
+
+extension APIError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Неверный адрес сервера"
+        case .noData:
+            return "Пустой ответ сервера"
+        case .decodingError:
+            return "Не удалось обработать ответ сервера"
+        case .serverError(let message):
+            if message.localizedCaseInsensitiveContains("already belongs to a pair") {
+                return "Вы уже подключены к холодильнику. Сначала покиньте текущий."
+            }
+            if message.localizedCaseInsensitiveContains("invalid invite code") {
+                return "Неверный код приглашения"
+            }
+            if message.localizedCaseInsensitiveContains("invite code expired") {
+                return "Срок действия кода истек"
+            }
+            if message.localizedCaseInsensitiveContains("invite code already used") {
+                return "Код приглашения уже использован"
+            }
+            if message.localizedCaseInsensitiveContains("pair is full") {
+                return "В холодильнике уже два участника"
+            }
+            return message
+        case .unauthorized:
+            return "Сессия истекла, попробуйте подключиться заново"
+        case .networkError(let error):
+            if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+                return "Нет подключения к интернету"
+            }
+            return error.localizedDescription
+        }
+    }
+}

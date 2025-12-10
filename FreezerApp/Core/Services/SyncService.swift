@@ -22,7 +22,10 @@ class SyncService: ObservableObject {
     // MARK: - Setup
     private func setupInitialState() {
         // Check if user is already in a pair
-        if keychain.pairId != nil, keychain.authToken != nil {
+        if let pairId = keychain.pairId, keychain.authToken != nil {
+            // Restore pair state so UI reflects existing connection
+            currentPair = Pair(id: pairId, name: "Общий холодильник", serverVersion: lastKnownVersion)
+
             // Start syncing
             startPeriodicSync()
         }
@@ -30,6 +33,10 @@ class SyncService: ObservableObject {
 
     // MARK: - Pair Management
     func createPair(name: String) async throws -> String {
+        if keychain.pairId != nil {
+            throw APIError.serverError("Вы уже подключены к холодильнику. Сначала покиньте текущий.")
+        }
+
         let deviceId = keychain.deviceId
 
         do {
@@ -58,6 +65,10 @@ class SyncService: ObservableObject {
     }
 
     func joinPair(inviteCode: String) async throws {
+        if keychain.pairId != nil {
+            throw APIError.serverError("Вы уже подключены к холодильнику. Сначала покиньте текущий.")
+        }
+
         let deviceId = keychain.deviceId
 
         do {
@@ -70,6 +81,11 @@ class SyncService: ObservableObject {
 
             // Update state
             lastKnownVersion = Int64(response.serverVersion) ?? 0
+            currentPair = Pair(
+                id: response.pairId,
+                name: "Общий холодильник",
+                serverVersion: lastKnownVersion
+            )
 
             // Apply initial data from server
             // This will be handled by DataRepository
