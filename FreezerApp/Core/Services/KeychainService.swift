@@ -32,6 +32,13 @@ class KeychainService {
         }
     }
 
+    // Generate a new deviceId (useful when switching pairs)
+    func generateNewDeviceId() -> String {
+        let newId = UUID().uuidString
+        try? saveString(newId, forKey: Keys.deviceId)
+        return newId
+    }
+
     var authToken: String? {
         get { try? getString(forKey: Keys.authToken) }
         set {
@@ -71,6 +78,14 @@ class KeychainService {
         try? deleteItem(forKey: Keys.pairId)
         try? deleteItem(forKey: Keys.userId)
         // Keep deviceId
+    }
+
+    // MARK: - Clear Everything (including deviceId)
+    func clearEverything() {
+        try? deleteItem(forKey: Keys.authToken)
+        try? deleteItem(forKey: Keys.pairId)
+        try? deleteItem(forKey: Keys.userId)
+        try? deleteItem(forKey: Keys.deviceId)
     }
 
     // MARK: - Private Methods

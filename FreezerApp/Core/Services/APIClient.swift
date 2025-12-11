@@ -164,28 +164,46 @@ class APIClient {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.serverError("Invalid response")
+                print("❌ APIClient: Invalid response type")
+                throw APIError.serverError("Неверный ответ сервера")
             }
+
+            print("📡 APIClient: Status \(httpResponse.statusCode)")
 
             if httpResponse.statusCode == 401 {
                 throw APIError.unauthorized
             }
 
             if httpResponse.statusCode >= 400 {
+                // Try to decode error response
                 if let errorResponse = try? decoder.decode(ErrorResponse.self, from: data) {
+                    print("❌ APIClient: Server error - \(errorResponse.message)")
                     throw APIError.serverError(errorResponse.message)
                 }
-                throw APIError.serverError("HTTP \(httpResponse.statusCode)")
+
+                // If decoding failed, try to get string from data
+                if let errorString = String(data: data, encoding: .utf8) {
+                    print("❌ APIClient: Raw error - \(errorString)")
+                }
+
+                throw APIError.serverError("Ошибка сервера (HTTP \(httpResponse.statusCode))")
             }
 
             do {
-                return try decoder.decode(T.self, from: data)
+                let result = try decoder.decode(T.self, from: data)
+                print("✅ APIClient: Request successful")
+                return result
             } catch {
+                print("❌ APIClient: Decoding error - \(error)")
+                if let dataString = String(data: data, encoding: .utf8) {
+                    print("📄 Response data: \(dataString)")
+                }
                 throw APIError.decodingError(error)
             }
         } catch let error as APIError {
             throw error
         } catch {
+            print("❌ APIClient: Network error - \(error)")
             throw APIError.networkError(error)
         }
     }

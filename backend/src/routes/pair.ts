@@ -59,16 +59,30 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
           userId = newUserResult.rows[0].id;
         }
 
-        // Check if user already has a pair
+        // Check if user already has a pair - auto-leave old pair
         const existingPairResult = await client.query(
           'SELECT pair_id FROM pair_members WHERE user_id = $1',
           [userId]
         );
 
         if (existingPairResult.rows.length > 0) {
-          throw new ConflictError(
-            'User already belongs to a pair. Leave the current pair first.'
+          const oldPairId = existingPairResult.rows[0].pair_id;
+
+          // Remove user from old pair
+          await client.query(
+            'DELETE FROM pair_members WHERE pair_id = $1 AND user_id = $2',
+            [oldPairId, userId]
           );
+
+          // Check if old pair is now empty and delete if so
+          const remainingMembersResult = await client.query(
+            'SELECT COUNT(*) as count FROM pair_members WHERE pair_id = $1',
+            [oldPairId]
+          );
+
+          if (parseInt(remainingMembersResult.rows[0].count) === 0) {
+            await client.query('DELETE FROM pairs WHERE id = $1', [oldPairId]);
+          }
         }
 
         // Create pair
@@ -219,16 +233,30 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
         if (userResult.rows.length > 0) {
           userId = userResult.rows[0].id;
 
-          // Check if user already in another pair
+          // Check if user already in another pair - auto-leave old pair
           const existingPairResult = await client.query(
             'SELECT pair_id FROM pair_members WHERE user_id = $1',
             [userId]
           );
 
           if (existingPairResult.rows.length > 0) {
-            throw new ConflictError(
-              'User already belongs to a pair. Leave the current pair first.'
+            const oldPairId = existingPairResult.rows[0].pair_id;
+
+            // Remove user from old pair
+            await client.query(
+              'DELETE FROM pair_members WHERE pair_id = $1 AND user_id = $2',
+              [oldPairId, userId]
             );
+
+            // Check if old pair is now empty and delete if so
+            const remainingMembersResult = await client.query(
+              'SELECT COUNT(*) as count FROM pair_members WHERE pair_id = $1',
+              [oldPairId]
+            );
+
+            if (parseInt(remainingMembersResult.rows[0].count) === 0) {
+              await client.query('DELETE FROM pairs WHERE id = $1', [oldPairId]);
+            }
           }
         } else {
           const newUserResult = await client.query(

@@ -269,6 +269,46 @@ struct SettingsView: View {
                     Text("О приложении")
                 }
 
+                // MARK: - Debug Section
+                #if DEBUG
+                Section {
+                    Button(role: .destructive) {
+                        KeychainService.shared.clearEverything()
+                        syncService.currentPair = nil
+                        errorMessage = "Все данные синхронизации удалены. Перезапустите приложение."
+                        showError = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash.circle")
+                                .foregroundColor(.red)
+                                .frame(width: 24)
+                            Text("Очистить данные синхронизации")
+                                .foregroundColor(.red)
+                        }
+                    }
+
+                    Button {
+                        let deviceId = KeychainService.shared.deviceId
+                        let pairId = KeychainService.shared.pairId ?? "nil"
+                        let token = KeychainService.shared.authToken ?? "nil"
+                        errorMessage = "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
+                        showError = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(Theme.Colors.primary)
+                                .frame(width: 24)
+                            Text("Показать debug info")
+                                .foregroundColor(Theme.Colors.textPrimary)
+                        }
+                    }
+                } header: {
+                    Text("Debug (только в режиме разработки)")
+                } footer: {
+                    Text("Эти опции доступны только в debug-сборке")
+                }
+                #endif
+
                 // MARK: - Developer Section
                 Section {
                     Link(destination: URL(string: "https://productowner.me")!) {

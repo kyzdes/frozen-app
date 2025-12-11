@@ -312,8 +312,15 @@ struct CreatePairView: View {
                     inviteCode = code
                     isCreating = false
                 }
+            } catch let error as APIError {
+                await MainActor.run {
+                    print("❌ CreatePairView: APIError caught - \(error)")
+                    errorMessage = error.localizedDescription
+                    isCreating = false
+                }
             } catch {
                 await MainActor.run {
+                    print("❌ CreatePairView: Unknown error - \(error)")
                     errorMessage = error.localizedDescription
                     isCreating = false
                 }

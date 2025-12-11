@@ -33,14 +33,28 @@ class SyncService: ObservableObject {
 
     // MARK: - Pair Management
     func createPair(name: String) async throws -> String {
+        print("🔵 SyncService: createPair called with name: \(name)")
+
+        // Stop any active sync
+        stopPeriodicSync()
+
+        // Clear old pair data to allow creating new pair
         if keychain.pairId != nil {
-            throw APIError.serverError("Вы уже подключены к холодильнику. Сначала покиньте текущий.")
+            print("⚠️ SyncService: Clearing old pair data")
+            keychain.clearAllData()
+            currentPair = nil
+            lastKnownVersion = 0
+            pendingChanges.removeAll()
+            syncStatus = SyncStatus()
         }
 
-        let deviceId = keychain.deviceId
+        // Generate fresh deviceId to avoid conflicts
+        let deviceId = keychain.generateNewDeviceId()
+        print("🔵 SyncService: Generated new deviceId: \(deviceId)")
 
         do {
             let response = try await apiClient.createPair(deviceId: deviceId, pairName: name)
+            print("✅ SyncService: Pair created successfully")
 
             // Save credentials
             keychain.authToken = response.token
@@ -59,20 +73,68 @@ class SyncService: ObservableObject {
             startPeriodicSync()
 
             return response.inviteCode
+        } catch let error as APIError {
+            print("❌ SyncService: createPair failed - \(error)")
+
+            // If still getting 409 conflict, try one more time with another new deviceId
+            if case .serverError(let message) = error,
+               message.contains("already belongs to a pair") {
+                print("🔄 SyncService: Retrying with another new deviceId")
+                let newDeviceId = keychain.generateNewDeviceId()
+
+                do {
+                    let retryResponse = try await apiClient.createPair(deviceId: newDeviceId, pairName: name)
+                    print("✅ SyncService: Pair created on retry")
+
+                    keychain.authToken = retryResponse.token
+                    keychain.pairId = retryResponse.pairId
+                    keychain.userId = retryResponse.userId
+
+                    lastKnownVersion = Int64(retryResponse.serverVersion) ?? 0
+                    currentPair = Pair(
+                        id: retryResponse.pairId,
+                        name: name,
+                        serverVersion: lastKnownVersion
+                    )
+
+                    startPeriodicSync()
+                    return retryResponse.inviteCode
+                } catch {
+                    print("❌ SyncService: Retry also failed - \(error)")
+                    throw error
+                }
+            }
+
+            throw error
         } catch {
+            print("❌ SyncService: createPair failed - \(error)")
             throw error
         }
     }
 
     func joinPair(inviteCode: String) async throws {
+        print("🔵 SyncService: joinPair called with code: \(inviteCode)")
+
+        // Stop any active sync
+        stopPeriodicSync()
+
+        // Clear old pair data to allow joining new pair
         if keychain.pairId != nil {
-            throw APIError.serverError("Вы уже подключены к холодильнику. Сначала покиньте текущий.")
+            print("⚠️ SyncService: Clearing old pair data")
+            keychain.clearAllData()
+            currentPair = nil
+            lastKnownVersion = 0
+            pendingChanges.removeAll()
+            syncStatus = SyncStatus()
         }
 
-        let deviceId = keychain.deviceId
+        // Generate fresh deviceId to avoid conflicts
+        let deviceId = keychain.generateNewDeviceId()
+        print("🔵 SyncService: Generated new deviceId: \(deviceId)")
 
         do {
             let response = try await apiClient.joinPair(deviceId: deviceId, inviteCode: inviteCode)
+            print("✅ SyncService: Joined pair successfully")
 
             // Save credentials
             keychain.authToken = response.token
@@ -97,7 +159,47 @@ class SyncService: ObservableObject {
 
             // Start syncing
             startPeriodicSync()
+        } catch let error as APIError {
+            print("❌ SyncService: joinPair failed - \(error)")
+
+            // If still getting 409 conflict, try one more time with another new deviceId
+            if case .serverError(let message) = error,
+               message.contains("already belongs to a pair") {
+                print("🔄 SyncService: Retrying with another new deviceId")
+                let newDeviceId = keychain.generateNewDeviceId()
+
+                do {
+                    let retryResponse = try await apiClient.joinPair(deviceId: newDeviceId, inviteCode: inviteCode)
+                    print("✅ SyncService: Joined pair on retry")
+
+                    keychain.authToken = retryResponse.token
+                    keychain.pairId = retryResponse.pairId
+                    keychain.userId = retryResponse.userId
+
+                    lastKnownVersion = Int64(retryResponse.serverVersion) ?? 0
+                    currentPair = Pair(
+                        id: retryResponse.pairId,
+                        name: "Общий холодильник",
+                        serverVersion: lastKnownVersion
+                    )
+
+                    NotificationCenter.default.post(
+                        name: .didReceiveInitialData,
+                        object: nil,
+                        userInfo: ["data": retryResponse.initialData]
+                    )
+
+                    startPeriodicSync()
+                    return
+                } catch {
+                    print("❌ SyncService: Retry also failed - \(error)")
+                    throw error
+                }
+            }
+
+            throw error
         } catch {
+            print("❌ SyncService: joinPair failed - \(error)")
             throw error
         }
     }
