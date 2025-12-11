@@ -7,6 +7,7 @@ import logger from './utils/logger.js';
 // Import routes
 import pairRoutes from './routes/pair.js';
 import syncRoutes from './routes/sync.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -20,6 +21,7 @@ async function start() {
     // Register routes
     server.register(pairRoutes, { prefix: '/pair' });
     server.register(syncRoutes, { prefix: '/sync' });
+    server.register(analyticsRoutes);
 
     // Start server
     await server.listen({ port: PORT, host: HOST });

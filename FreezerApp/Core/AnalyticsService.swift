@@ -6,8 +6,19 @@ final class AnalyticsService {
     static let shared = AnalyticsService()
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.freezerapp", category: "Analytics")
+    private let apiClient = APIClient.shared
+    private let keychain = KeychainService.shared
+    private var hasTrackedAppOpen = false
 
     private init() {}
+
+    // MARK: - Lifecycle
+    func trackAppOpened() {
+        guard !hasTrackedAppOpen else { return }
+        hasTrackedAppOpen = true
+
+        logEvent("app_opened", parameters: [:])
+    }
 
     // MARK: - Category Events
 
@@ -113,6 +124,23 @@ final class AnalyticsService {
         ])
     }
 
+    // MARK: - Notifications
+    func trackNotificationsEnabled() {
+        logger.info("Notifications enabled")
+        logEvent("notifications_enabled", parameters: [:])
+    }
+
+    // MARK: - Pairing
+    func trackPairCreated(pairId: String) {
+        logger.info("Shared freezer created: \(pairId, privacy: .public)")
+        logEvent("pair_created", parameters: ["pair_id": pairId])
+    }
+
+    func trackPairJoined(pairId: String) {
+        logger.info("Joined shared freezer: \(pairId, privacy: .public)")
+        logEvent("pair_joined", parameters: ["pair_id": pairId])
+    }
+
     // MARK: - Search & Filter Events
 
     func trackSearch(query: String, resultsCount: Int) {
@@ -148,5 +176,19 @@ final class AnalyticsService {
             print("   Parameters: \(parameters)")
         }
         #endif
+
+        let payload = APIClient.AnalyticsEventPayload(
+            event: eventName,
+            deviceId: keychain.deviceId,
+            userId: keychain.userId,
+            pairId: keychain.pairId,
+            timestamp: Date(),
+            properties: parameters.isEmpty ? nil : parameters
+        )
+
+        let token = keychain.authToken
+        Task.detached {
+            await self.apiClient.sendAnalyticsEvent(payload, token: token)
+        }
     }
 }

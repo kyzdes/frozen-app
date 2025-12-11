@@ -12,6 +12,7 @@ class DataRepository: ObservableObject {
     private let historyKey = "freezer-history"
     private let notificationService = NotificationService.shared
     private let syncService: SyncService
+    private let analytics = AnalyticsService.shared
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.freezerapp", category: "DataRepository")
 
     // iCloud Key-Value Store для локальной синхронизации (fallback)
@@ -274,6 +275,7 @@ class DataRepository: ObservableObject {
         newCategory.updatedAt = Date()
         categories.append(newCategory)
         saveCategories()
+        analytics.trackCategoryCreated(name: newCategory.name, icon: newCategory.icon)
 
         // Queue for sync
         syncService.queueChange(PendingChange(
@@ -356,6 +358,7 @@ class DataRepository: ObservableObject {
         saveItems()
         updateCategoryCounts()
         scheduleNotifications()
+        analytics.trackItemCreated(name: newItem.name, categoryId: newItem.categoryId, shelfNumber: newItem.shelfNumber)
 
         // Add history event
         let historyEvent = HistoryEvent(

@@ -94,6 +94,7 @@ struct SettingsView: View {
                         .onChange(of: notificationsEnabled) { _, newValue in
                             if newValue {
                                 requestNotificationPermission()
+                                AnalyticsService.shared.trackNotificationsEnabled()
                             } else {
                                 notificationService.removeAllPendingNotificationRequests()
                             }

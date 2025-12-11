@@ -6,6 +6,8 @@ struct FreezerApp: App {
     @StateObject private var repository = DataRepository(syncService: .shared)
 
     init() {
+        AnalyticsService.shared.trackAppOpened()
+
         // Миграция: выключаем уведомления по умолчанию для версии 0.4
         // Это выполнится один раз при обновлении
         let migrationKey = "v0.4_notifications_migration"

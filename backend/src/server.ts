@@ -4,6 +4,7 @@ import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import logger from './utils/logger.js';
 import { AppError } from './utils/errors.js';
+import { getRegistry } from './metrics.js';
 
 const server = Fastify({
   logger: true,
@@ -58,6 +59,13 @@ server.get('/health', async () => {
     status: 'ok',
     timestamp: new Date().toISOString(),
   };
+});
+
+// Metrics for Prometheus
+const registry = getRegistry();
+server.get('/metrics', async (_request, reply) => {
+  reply.header('Content-Type', registry.contentType);
+  return registry.metrics();
 });
 
 // Not found handler

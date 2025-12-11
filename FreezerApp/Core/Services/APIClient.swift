@@ -212,6 +212,46 @@ class APIClient {
         let error: String
         let message: String
     }
+
+    // MARK: - Analytics
+    struct AnalyticsEventPayload: Codable {
+        let event: String
+        let deviceId: String
+        let userId: String?
+        let pairId: String?
+        let timestamp: Date
+        let properties: [String: String]?
+
+        enum CodingKeys: String, CodingKey {
+            case event
+            case deviceId = "device_id"
+            case userId = "user_id"
+            case pairId = "pair_id"
+            case timestamp
+            case properties
+        }
+    }
+
+    func sendAnalyticsEvent(_ payload: AnalyticsEventPayload, token: String?) async {
+        let url = URL(string: "\(baseURL)/analytics")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        do {
+            request.httpBody = try encoder.encode(payload)
+            _ = try await URLSession.shared.data(for: request)
+        } catch {
+            // Analytics failures should not break UX; log in debug only
+            #if DEBUG
+            print("Analytics send failed: \(error)")
+            #endif
+        }
+    }
 }
 
 extension APIError: LocalizedError {

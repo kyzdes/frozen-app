@@ -10,6 +10,7 @@ class SyncService: ObservableObject {
 
     private let apiClient = APIClient.shared
     private let keychain = KeychainService.shared
+    private let analytics = AnalyticsService.shared
     private var syncTimer: Timer?
     private var pendingChanges: [PendingChange] = []
     private var lastKnownVersion: Int64 = 0
@@ -71,6 +72,7 @@ class SyncService: ObservableObject {
 
             // Start syncing
             startPeriodicSync()
+            analytics.trackPairCreated(pairId: response.pairId)
 
             return response.inviteCode
         } catch let error as APIError {
@@ -98,6 +100,7 @@ class SyncService: ObservableObject {
                     )
 
                     startPeriodicSync()
+                    analytics.trackPairCreated(pairId: retryResponse.pairId)
                     return retryResponse.inviteCode
                 } catch {
                     print("❌ SyncService: Retry also failed - \(error)")
@@ -159,6 +162,7 @@ class SyncService: ObservableObject {
 
             // Start syncing
             startPeriodicSync()
+            analytics.trackPairJoined(pairId: response.pairId)
         } catch let error as APIError {
             print("❌ SyncService: joinPair failed - \(error)")
 
@@ -190,6 +194,7 @@ class SyncService: ObservableObject {
                     )
 
                     startPeriodicSync()
+                    analytics.trackPairJoined(pairId: retryResponse.pairId)
                     return
                 } catch {
                     print("❌ SyncService: Retry also failed - \(error)")
