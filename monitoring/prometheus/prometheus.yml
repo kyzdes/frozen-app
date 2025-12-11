@@ -21,6 +21,6 @@ scrape_configs:
   # Мониторинг Freezer API
   - job_name: 'freezer-api'
     static_configs:
-      - targets: ['172.18.0.1:3000']
+      - targets: ['freezer-api:3000']
     metrics_path: '/metrics'
     scrape_interval: 30s

@@ -36,6 +36,7 @@ services:
       - prometheus_data:/prometheus
     networks:
       - monitoring
+      - freezer-backend
 
   # Loki - сбор и хранение логов
   loki:
@@ -101,6 +102,9 @@ services:
 networks:
   monitoring:
     driver: bridge
+  freezer-backend:
+    external: true
+    name: freezer-backend_default
 
 volumes:
   grafana_data:
