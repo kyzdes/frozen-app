@@ -301,12 +301,31 @@ class SyncService: ObservableObject {
     }
 
     private func collectPendingChanges() -> APIClient.SyncData {
-        // For now, return empty changes
-        // This will be populated by DataRepository
+        var categories: [String: Category] = [:]
+        var items: [String: Item] = [:]
+        var history: [String: HistoryEvent] = [:]
+
+        for change in pendingChanges {
+            switch change.type {
+            case .categoryAdded, .categoryUpdated, .categoryDeleted:
+                if let category = change.category {
+                    categories[category.id] = category
+                }
+            case .itemAdded, .itemUpdated, .itemDeleted:
+                if let item = change.item {
+                    items[item.id] = item
+                }
+            case .historyAdded:
+                if let event = change.historyEvent {
+                    history[event.id] = event
+                }
+            }
+        }
+
         return APIClient.SyncData(
-            categories: [],
-            items: [],
-            history: []
+            categories: Array(categories.values),
+            items: Array(items.values),
+            history: Array(history.values)
         )
     }
 
@@ -376,6 +395,9 @@ struct PendingChange: Codable {
     let type: ChangeType
     let entityId: String
     let timestamp: Date
+    let category: Category?
+    let item: Item?
+    let historyEvent: HistoryEvent?
 }
 
 // MARK: - Notifications

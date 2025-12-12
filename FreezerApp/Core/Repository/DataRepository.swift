@@ -281,7 +281,10 @@ class DataRepository: ObservableObject {
         syncService.queueChange(PendingChange(
             type: .categoryAdded,
             entityId: newCategory.id,
-            timestamp: Date()
+            timestamp: Date(),
+            category: newCategory,
+            item: nil,
+            historyEvent: nil
         ))
     }
 
@@ -296,7 +299,10 @@ class DataRepository: ObservableObject {
         syncService.queueChange(PendingChange(
             type: .categoryUpdated,
             entityId: category.id,
-            timestamp: Date()
+            timestamp: Date(),
+            category: updatedCategory,
+            item: nil,
+            historyEvent: nil
         ))
     }
 
@@ -319,7 +325,10 @@ class DataRepository: ObservableObject {
             syncService.queueChange(PendingChange(
                 type: .categoryDeleted,
                 entityId: categoryId,
-                timestamp: Date()
+                timestamp: Date(),
+                category: categories[index],
+                item: nil,
+                historyEvent: nil
             ))
 
             // Remove from local display after a delay
@@ -372,11 +381,14 @@ class DataRepository: ObservableObject {
         addHistoryEvent(historyEvent)
 
         // Queue for sync
-        syncService.queueChange(PendingChange(
-            type: .itemAdded,
-            entityId: newItem.id,
-            timestamp: Date()
-        ))
+            syncService.queueChange(PendingChange(
+                type: .itemAdded,
+                entityId: newItem.id,
+                timestamp: Date(),
+                category: nil,
+                item: newItem,
+                historyEvent: nil
+            ))
     }
 
     func updateItem(_ item: Item) {
@@ -392,7 +404,10 @@ class DataRepository: ObservableObject {
         syncService.queueChange(PendingChange(
             type: .itemUpdated,
             entityId: item.id,
-            timestamp: Date()
+            timestamp: Date(),
+            category: nil,
+            item: updatedItem,
+            historyEvent: nil
         ))
     }
 
@@ -409,7 +424,10 @@ class DataRepository: ObservableObject {
             syncService.queueChange(PendingChange(
                 type: .itemDeleted,
                 entityId: itemId,
-                timestamp: Date()
+                timestamp: Date(),
+                category: nil,
+                item: items[index],
+                historyEvent: nil
             ))
 
             // Remove from local display after a delay
@@ -441,7 +459,10 @@ class DataRepository: ObservableObject {
         syncService.queueChange(PendingChange(
             type: .itemUpdated,
             entityId: itemId,
-            timestamp: Date()
+            timestamp: Date(),
+            category: nil,
+            item: items[index],
+            historyEvent: nil
         ))
     }
 
@@ -466,7 +487,10 @@ class DataRepository: ObservableObject {
         syncService.queueChange(PendingChange(
             type: .itemUpdated,
             entityId: itemId,
-            timestamp: Date()
+            timestamp: Date(),
+            category: nil,
+            item: items[index],
+            historyEvent: nil
         ))
     }
 
@@ -510,7 +534,10 @@ class DataRepository: ObservableObject {
         syncService.queueChange(PendingChange(
             type: .historyAdded,
             entityId: newEvent.id,
-            timestamp: Date()
+            timestamp: Date(),
+            category: nil,
+            item: nil,
+            historyEvent: newEvent
         ))
     }
 }
