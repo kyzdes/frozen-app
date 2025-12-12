@@ -354,7 +354,10 @@ class DataRepository: ObservableObject {
             syncService.queueChange(PendingChange(
                 type: .categoryUpdated,
                 entityId: category.id,
-                timestamp: Date()
+                timestamp: Date(),
+                category: category,
+                item: nil,
+                historyEvent: nil
             ))
         }
     }
