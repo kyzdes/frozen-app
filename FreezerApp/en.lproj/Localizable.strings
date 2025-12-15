@@ -19,6 +19,9 @@
 "Тема оформления" = "Appearance";
 "Оформление" = "Theme";
 "Выберите тему оформления приложения" = "Choose the app theme";
+"Язык" = "Language";
+"Русский" = "Russian";
+"Выберите язык и тему оформления приложения" = "Choose the app language and theme";
 
 /* Home / Categories */
 "Свернуть все" = "Collapse all";
@@ -159,10 +162,15 @@
 "Статистика" = "Stats";
 "Версия" = "Version";
 "О приложении" = "About";
+"Написать в поддержку" = "Contact support";
 "Debug (только в режиме разработки)" = "Debug (dev builds only)";
 "Эти опции доступны только в debug-сборке" = "These options are available only in debug builds";
 "Очистить данные синхронизации" = "Clear sync data";
 "Показать debug info" = "Show debug info";
+"Скопировать debug info" = "Copy debug info";
+"Добавить демо данные" = "Add demo data";
+"Инструменты разработчика" = "Developer tools";
+"Чтобы скрыть, перезапустите приложение" = "Restart the app to hide these options";
 "Все данные синхронизации удалены. Перезапустите приложение." = "Sync data cleared. Restart the app.";
 "Не удалось экспортировать данные: %@" = "Could not export data: %@";
 "Не удалось импортировать данные: %@" = "Could not import data: %@";

@@ -46,8 +46,8 @@ struct CategoryCard: View {
                 .animation(.easeInOut(duration: 0.2), value: isExpanded)
 
             Menu {
-                Button("Редактировать", systemImage: "pencil", action: onEdit)
-                Button("Удалить", role: .destructive, action: onDelete)
+                Button(LK("Редактировать"), systemImage: "pencil", action: onEdit)
+                Button(LK("Удалить"), role: .destructive, action: onDelete)
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 18, weight: .semibold))
@@ -67,16 +67,16 @@ struct CategoryCard: View {
             onLongPress?()
         }
         .contextMenu {
-            Button("Редактировать", systemImage: "pencil", action: onEdit)
-            Button("Удалить", role: .destructive, action: onDelete)
+            Button(LK("Редактировать"), systemImage: "pencil", action: onEdit)
+            Button(LK("Удалить"), role: .destructive, action: onDelete)
         }
     }
 
     private var itemsWord: String {
         let count = category.itemCount
-        if count % 10 == 1 && count % 100 != 11 { return "заготовка" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "заготовки" }
-        return "заготовок"
+        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("заготовка", comment: "item singular") }
+        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("заготовки", comment: "items few") }
+        return NSLocalizedString("заготовок", comment: "items many")
     }
 }
 

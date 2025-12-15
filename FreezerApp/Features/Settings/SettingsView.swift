@@ -21,6 +21,7 @@ struct SettingsView: View {
     @EnvironmentObject var syncService: SyncService
     @Environment(\.dismiss) var dismiss
 
+    @AppStorage("appLanguage") private var appLanguage: String = "ru"
     @State private var showExportPicker = false
     @State private var showImportPicker = false
     @State private var showError = false
@@ -32,6 +33,8 @@ struct SettingsView: View {
     @State private var showCreatePair = false
     @State private var showJoinPair = false
     @State private var showLeavePairConfirmation = false
+    @State private var developerTapCount = 0
+    @State private var developerOptionsVisible = false
     @AppStorage("appearanceMode") private var appearanceMode: String = AppearanceMode.system.rawValue
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = false
     @AppStorage("notificationDaysData") private var notificationDaysData: Data = try! JSONEncoder().encode([3, 7, 14])
@@ -42,289 +45,16 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                // MARK: - Backup Section
-                Section {
-                    Button {
-                        exportData()
-                    } label: {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                                .foregroundColor(Theme.Colors.primary)
-                                .frame(width: 24)
-                            Text("Экспортировать данные")
-                                .foregroundColor(Theme.Colors.textPrimary)
-                        }
-                    }
-
-                    Button {
-                        showImportPicker = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "square.and.arrow.down")
-                                .foregroundColor(Theme.Colors.primary)
-                                .frame(width: 24)
-                            Text("Импортировать данные")
-                                .foregroundColor(Theme.Colors.textPrimary)
-                        }
-                    }
-                } header: {
-                    Text("Резервное копирование")
-                } footer: {
-                    Text("Экспортируйте данные для сохранения резервной копии или переноса на другое устройство")
-                }
-
-                // MARK: - Appearance Section
-                Section {
-                    Picker("Тема оформления", selection: $appearanceMode) {
-                        ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
-                            Text(mode.rawValue).tag(mode.rawValue)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                } header: {
-                    Text("Оформление")
-                } footer: {
-                    Text("Выберите тему оформления приложения")
-                }
-
-                // MARK: - Notifications Section
-                Section {
-                    Toggle("Уведомления о сроках", isOn: $notificationsEnabled)
-                        .font(Theme.Typography.body)
-                        .onChange(of: notificationsEnabled) { _, newValue in
-                            if newValue {
-                                requestNotificationPermission()
-                                AnalyticsService.shared.trackNotificationsEnabled()
-                            } else {
-                                notificationService.removeAllPendingNotificationRequests()
-                            }
-                        }
-                } header: {
-                    Text("Уведомления")
-                } footer: {
-                    Text("Получайте напоминания о заготовках, срок годности которых скоро истекает")
-                }
-
-                if notificationsEnabled {
-                    Section {
-                        ForEach([3, 7, 14], id: \.self) { days in
-                            Toggle("\(days) \(daysWord(days))", isOn: Binding(
-                                get: { notificationDays.contains(days) },
-                                set: { isOn in
-                                    if isOn {
-                                        var updated = notificationDays
-                                        if !updated.contains(days) {
-                                            updated.append(days)
-                                            updated.sort()
-                                            updateNotificationDays(updated)
-                                        }
-                                    } else {
-                                        var updated = notificationDays
-                                        updated.removeAll { $0 == days }
-                                        updateNotificationDays(updated)
-                                    }
-                                }
-                            ))
-                            .font(Theme.Typography.body)
-                        }
-                    } header: {
-                        Text("Напоминать за")
-                    } footer: {
-                        Text("Выберите, за сколько дней до истечения срока годности отправлять уведомление")
-                    }
-                }
-
-                // MARK: - Sync Section
-                Section {
-                    if syncService.currentPair != nil {
-                        // Connected to pair
-                        HStack(spacing: 12) {
-                            Image(systemName: syncService.syncStatus.iconName)
-                                .foregroundColor(Color(syncService.syncStatus.iconColor))
-                                .frame(width: 24)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Статус синхронизации")
-                                    .foregroundColor(Theme.Colors.textPrimary)
-                                    .font(Theme.Typography.body)
-                                Text(syncService.syncStatus.displayText)
-                                    .foregroundColor(Theme.Colors.textSecondary)
-                                    .font(Theme.Typography.caption)
-                            }
-                            Spacer()
-                        }
-
-                        Button {
-                            Task {
-                                await syncService.syncNow()
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                                    .foregroundColor(Theme.Colors.primary)
-                                    .frame(width: 24)
-                                Text("Синхронизировать вручную")
-                                    .foregroundColor(Theme.Colors.textPrimary)
-                            }
-                        }
-
-                        Button(role: .destructive) {
-                            showLeavePairConfirmation = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "xmark.circle")
-                                    .foregroundColor(.red)
-                                    .frame(width: 24)
-                                Text("Покинуть холодильник")
-                                    .foregroundColor(.red)
-                            }
-                        }
-                    } else {
-                        // Not connected
-                        Button {
-                            showCreatePair = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "plus.circle")
-                                    .foregroundColor(Theme.Colors.primary)
-                                    .frame(width: 24)
-                                Text("Создать общий холодильник")
-                                    .foregroundColor(Theme.Colors.textPrimary)
-                            }
-                        }
-
-                        Button {
-                            showJoinPair = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "link")
-                                    .foregroundColor(Theme.Colors.primary)
-                                    .frame(width: 24)
-                                Text("Подключиться к холодильнику")
-                                    .foregroundColor(Theme.Colors.textPrimary)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Синхронизация с партнером")
-                } footer: {
-                    if syncService.currentPair != nil {
-                        Text("Ваши данные синхронизируются с партнером каждые 5 секунд")
-                    } else {
-                        Text("Создайте общий холодильник или подключитесь к существующему для синхронизации данных с партнером")
-                    }
-                }
-
-                // MARK: - iCloud Section
-                Section {
-                    HStack {
-                        Image(systemName: "icloud")
-                            .foregroundColor(backupService.checkiCloudStatus() ? Theme.Colors.success : Theme.Colors.textSecondary)
-                            .frame(width: 24)
-                        Text("Синхронизация iCloud")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                        Spacer()
-                        Text(backupService.checkiCloudStatus() ? "Включена" : "Выключена")
-                            .foregroundColor(Theme.Colors.textSecondary)
-                            .font(Theme.Typography.callout)
-                    }
-                } header: {
-                    Text("Локальная синхронизация")
-                } footer: {
-                    Text("При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID")
-                }
-
-                // MARK: - Data Section
-                Section {
-                    HStack {
-                        Text("Категорий")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                        Spacer()
-                        Text("\(repository.categories.count)")
-                            .foregroundColor(Theme.Colors.textSecondary)
-                            .font(Theme.Typography.callout)
-                    }
-
-                    HStack {
-                        Text("Заготовок")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                        Spacer()
-                        Text("\(repository.items.count)")
-                            .foregroundColor(Theme.Colors.textSecondary)
-                            .font(Theme.Typography.callout)
-                    }
-                } header: {
-                    Text("Статистика")
-                }
-
-                // MARK: - App Info
-                Section {
-                    HStack {
-                        Text("Версия")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                        Spacer()
-                        Text(appVersion)
-                            .foregroundColor(Theme.Colors.textSecondary)
-                            .font(Theme.Typography.callout)
-                    }
-                } header: {
-                    Text("О приложении")
-                }
-
-                // MARK: - Debug Section
-                #if DEBUG
-                Section {
-                    Button(role: .destructive) {
-                        KeychainService.shared.clearEverything()
-                        syncService.currentPair = nil
-                        errorMessage = "Все данные синхронизации удалены. Перезапустите приложение."
-                        showError = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash.circle")
-                                .foregroundColor(.red)
-                                .frame(width: 24)
-                            Text("Очистить данные синхронизации")
-                                .foregroundColor(.red)
-                        }
-                    }
-
-                    Button {
-                        let deviceId = KeychainService.shared.deviceId
-                        let pairId = KeychainService.shared.pairId ?? "nil"
-                        let token = KeychainService.shared.authToken ?? "nil"
-                        errorMessage = "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
-                        showError = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(Theme.Colors.primary)
-                                .frame(width: 24)
-                            Text("Показать debug info")
-                                .foregroundColor(Theme.Colors.textPrimary)
-                        }
-                    }
-                } header: {
-                    Text("Debug (только в режиме разработки)")
-                } footer: {
-                    Text("Эти опции доступны только в debug-сборке")
-                }
-                #endif
-
-                // MARK: - Developer Section
-                Section {
-                    Link(destination: URL(string: "https://productowner.me")!) {
-                        HStack {
-                            Spacer()
-                            Text("ПРОДУКТОВНЕР")
-                                .font(Theme.Typography.callout)
-                                .fontWeight(.semibold)
-                                .foregroundColor(Theme.Colors.primary)
-                            Spacer()
-                        }
-                        .padding(.vertical, Theme.Spacing.sm)
-                    }
-                }
-                .listRowBackground(Color.clear)
+                backupSection
+                appearanceSection
+                notificationsSection
+                if notificationsEnabled { notificationDaysSection }
+                syncSection
+                if FeatureFlags.is_icloud_sync_active { iCloudSection }
+                statsSection
+                appInfoSection
+                if developerOptionsVisible { developerToolsSection }
+                developerLinkSection
             }
             .navigationTitle("Настройки")
             .navigationBarTitleDisplayMode(.inline)
@@ -351,7 +81,16 @@ struct SettingsView: View {
                 }
             } message: {
                 if let backup = pendingBackup {
-                    Text("Будет импортировано \(backup.categories.count) категорий и \(backup.items.count) заготовок. Текущие данные будут заменены.")
+                    Text(
+                        String(
+                            format: NSLocalizedString(
+                                "Будет импортировано %d категорий и %d заготовок. Текущие данные будут заменены.",
+                                comment: ""
+                            ),
+                            backup.categories.count,
+                            backup.items.count
+                        )
+                    )
                 }
             }
             .fileExporter(
@@ -393,7 +132,360 @@ struct SettingsView: View {
                 Text("Вы будете отключены от общего холодильника. Локальные данные останутся на устройстве.")
             }
             .preferredColorScheme(AppearanceMode(rawValue: appearanceMode)?.colorScheme)
+            .onChange(of: appLanguage) { _, newValue in
+                UserDefaults.standard.set([newValue], forKey: "AppleLanguages")
+                UserDefaults.standard.synchronize()
+            }
         }
+    }
+
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var backupSection: some View {
+        Section {
+            Button {
+                exportData()
+            } label: {
+                HStack {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundColor(Theme.Colors.primary)
+                        .frame(width: 24)
+                    Text("Экспортировать данные")
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+            }
+
+            Button {
+                showImportPicker = true
+            } label: {
+                HStack {
+                    Image(systemName: "square.and.arrow.down")
+                        .foregroundColor(Theme.Colors.primary)
+                        .frame(width: 24)
+                    Text("Импортировать данные")
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+            }
+        } header: {
+            Text("Резервное копирование")
+        } footer: {
+            Text("Экспортируйте данные для сохранения резервной копии или переноса на другое устройство")
+        }
+    }
+
+    @ViewBuilder
+    private var appearanceSection: some View {
+        Section {
+            Picker("Язык", selection: $appLanguage) {
+                Text("Русский").tag("ru")
+                Text("English").tag("en")
+            }
+            .pickerStyle(.segmented)
+
+            Picker("Тема оформления", selection: $appearanceMode) {
+                ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
+                    Text(mode.rawValue).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.menu)
+        } header: {
+            Text("Оформление")
+        } footer: {
+            Text("Выберите язык и тему оформления приложения")
+        }
+    }
+
+    @ViewBuilder
+    private var notificationsSection: some View {
+        Section {
+            Toggle("Уведомления о сроках", isOn: $notificationsEnabled)
+                .font(Theme.Typography.body)
+                .onChange(of: notificationsEnabled) { _, newValue in
+                    if newValue {
+                        requestNotificationPermission()
+                        AnalyticsService.shared.trackNotificationsEnabled()
+                    } else {
+                        notificationService.removeAllPendingNotificationRequests()
+                    }
+                }
+        } header: {
+            Text("Уведомления")
+        } footer: {
+            Text("Получайте напоминания о заготовках, срок годности которых скоро истекает")
+        }
+    }
+
+    @ViewBuilder
+    private var notificationDaysSection: some View {
+        Section {
+            ForEach([3, 7, 14], id: \.self) { days in
+                Toggle(
+                    "\(days) \(daysWord(days))",
+                    isOn: notificationToggleBinding(for: days)
+                )
+                .font(Theme.Typography.body)
+            }
+        } header: {
+            Text("Напоминать за")
+        } footer: {
+            Text("Выберите, за сколько дней до истечения срока годности отправлять уведомление")
+        }
+    }
+
+    @ViewBuilder
+    private var syncSection: some View {
+        Section {
+            if syncService.currentPair != nil {
+                HStack(spacing: 12) {
+                    Image(systemName: syncService.syncStatus.iconName)
+                        .foregroundColor(Color(syncService.syncStatus.iconColor))
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Статус синхронизации")
+                            .foregroundColor(Theme.Colors.textPrimary)
+                            .font(Theme.Typography.body)
+                        Text(syncService.syncStatus.displayText)
+                            .foregroundColor(Theme.Colors.textSecondary)
+                            .font(Theme.Typography.caption)
+                    }
+                    Spacer()
+                }
+
+                Button {
+                    Task {
+                        await syncService.syncNow()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 24)
+                        Text("Синхронизировать вручную")
+                            .foregroundColor(Theme.Colors.textPrimary)
+                    }
+                }
+
+                Button(role: .destructive) {
+                    showLeavePairConfirmation = true
+                } label: {
+                    HStack {
+                        Image(systemName: "xmark.circle")
+                            .foregroundColor(.red)
+                        .frame(width: 24)
+                        Text("Покинуть холодильник")
+                            .foregroundColor(.red)
+                    }
+                }
+            } else {
+                Button {
+                    showCreatePair = true
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle")
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 24)
+                        Text("Создать общий холодильник")
+                            .foregroundColor(Theme.Colors.textPrimary)
+                    }
+                }
+
+                Button {
+                    showJoinPair = true
+                } label: {
+                    HStack {
+                        Image(systemName: "link")
+                            .foregroundColor(Theme.Colors.primary)
+                            .frame(width: 24)
+                        Text("Подключиться к холодильнику")
+                            .foregroundColor(Theme.Colors.textPrimary)
+                    }
+                }
+            }
+        } header: {
+            Text("Синхронизация с партнером")
+        } footer: {
+            if syncService.currentPair != nil {
+                Text("Ваши данные синхронизируются с партнером каждые 5 секунд")
+            } else {
+                Text("Создайте общий холодильник или подключитесь к существующему для синхронизации данных с партнером")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var iCloudSection: some View {
+        Section {
+            HStack {
+                Image(systemName: "icloud")
+                    .foregroundColor(backupService.checkiCloudStatus() ? Theme.Colors.success : Theme.Colors.textSecondary)
+                    .frame(width: 24)
+                Text("Синхронизация iCloud")
+                    .foregroundColor(Theme.Colors.textPrimary)
+                Spacer()
+                Text(backupService.checkiCloudStatus() ? "Включена" : "Выключена")
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(Theme.Typography.callout)
+            }
+        } header: {
+            Text("Локальная синхронизация")
+        } footer: {
+            Text("При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID")
+        }
+    }
+
+    @ViewBuilder
+    private var statsSection: some View {
+        Section {
+            HStack {
+                Text("Категорий")
+                    .foregroundColor(Theme.Colors.textPrimary)
+                Spacer()
+                Text("\(repository.categories.count)")
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(Theme.Typography.callout)
+            }
+
+            HStack {
+                Text("Заготовок")
+                    .foregroundColor(Theme.Colors.textPrimary)
+                Spacer()
+                Text("\(repository.items.count)")
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(Theme.Typography.callout)
+            }
+        } header: {
+            Text("Статистика")
+        }
+    }
+
+    @ViewBuilder
+    private var appInfoSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+                HStack {
+                    Text("Версия")
+                        .foregroundColor(Theme.Colors.textPrimary)
+                    Spacer()
+                    Text(appVersion)
+                        .foregroundColor(Theme.Colors.textSecondary)
+                        .font(Theme.Typography.callout)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !developerOptionsVisible {
+                        developerTapCount += 1
+                        if developerTapCount >= 5 {
+                            developerOptionsVisible = true
+                            developerTapCount = 0
+                        }
+                    }
+                }
+
+                Button {
+                    if let url = URL(string: "mailto:ceo@moone.dev") {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    HStack {
+                        Text("Написать в поддержку")
+                            .foregroundColor(Theme.Colors.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(Theme.Colors.textSecondary)
+                    }
+                }
+            }
+            .padding(.vertical, Theme.Spacing.xs)
+        } header: {
+            Text("О приложении")
+        }
+    }
+
+    @ViewBuilder
+    private var developerToolsSection: some View {
+        Section {
+            Button(role: .destructive) {
+                KeychainService.shared.clearEverything()
+                syncService.currentPair = nil
+                errorMessage = "Все данные синхронизации удалены. Перезапустите приложение."
+                showError = true
+            } label: {
+                HStack {
+                    Image(systemName: "trash.circle")
+                        .foregroundColor(.red)
+                        .frame(width: 24)
+                    Text("Очистить данные синхронизации")
+                        .foregroundColor(.red)
+                }
+            }
+
+            Button {
+                let deviceId = KeychainService.shared.deviceId
+                let pairId = KeychainService.shared.pairId ?? "nil"
+                let token = KeychainService.shared.authToken ?? "nil"
+                errorMessage = "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
+                showError = true
+            } label: {
+                HStack {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(Theme.Colors.primary)
+                        .frame(width: 24)
+                    Text("Показать debug info")
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+            }
+
+            Button {
+                let deviceId = KeychainService.shared.deviceId
+                let pairId = KeychainService.shared.pairId ?? "nil"
+                let token = KeychainService.shared.authToken ?? "nil"
+                let info = "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
+                UIPasteboard.general.string = info
+            } label: {
+                HStack {
+                    Image(systemName: "doc.on.doc")
+                        .foregroundColor(Theme.Colors.primary)
+                        .frame(width: 24)
+                    Text("Скопировать debug info")
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+            }
+
+            Button {
+                repository.addDemoData()
+            } label: {
+                HStack {
+                    Image(systemName: "shippingbox.fill")
+                        .foregroundColor(Theme.Colors.primary)
+                        .frame(width: 24)
+                    Text("Добавить демо данные")
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+            }
+        } header: {
+            Text("Инструменты разработчика")
+        } footer: {
+            Text("Чтобы скрыть, перезапустите приложение")
+        }
+    }
+
+    @ViewBuilder
+    private var developerLinkSection: some View {
+        Section {
+            Link(destination: URL(string: "https://productowner.me")!) {
+                HStack {
+                    Spacer()
+                    Text("ПРОДУКТОВНЕР")
+                        .font(Theme.Typography.callout)
+                        .fontWeight(.semibold)
+                        .foregroundColor(Theme.Colors.primary)
+                    Spacer()
+                }
+                .padding(.vertical, Theme.Spacing.sm)
+            }
+        }
+        .listRowBackground(Color.clear)
     }
 
     // MARK: - Export
@@ -505,6 +597,24 @@ struct SettingsView: View {
         if count % 10 == 1 && count % 100 != 11 { return "день" }
         if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
         return "дней"
+    }
+
+    private func notificationToggleBinding(for days: Int) -> Binding<Bool> {
+        Binding(
+            get: { notificationDays.contains(days) },
+            set: { isOn in
+                var updated = notificationDays
+                if isOn {
+                    if !updated.contains(days) {
+                        updated.append(days)
+                        updated.sort()
+                    }
+                } else {
+                    updated.removeAll { $0 == days }
+                }
+                updateNotificationDays(updated)
+            }
+        )
     }
 
     // MARK: - Sync

@@ -14,6 +14,7 @@ class DataRepository: ObservableObject {
     private let syncService: SyncService
     private let analytics = AnalyticsService.shared
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.freezerapp", category: "DataRepository")
+    private let isICloudSyncActive = FeatureFlags.is_icloud_sync_active
 
     // iCloud Key-Value Store для локальной синхронизации (fallback)
     private let cloudStore = NSUbiquitousKeyValueStore.default
@@ -32,6 +33,7 @@ class DataRepository: ObservableObject {
 
     // MARK: - iCloud Sync Setup
     private func setupCloudSync() {
+        guard isICloudSyncActive else { return }
         // Подписка на изменения из iCloud
         NotificationCenter.default.addObserver(
             self,
@@ -172,11 +174,13 @@ class DataRepository: ObservableObject {
     }
 
     private func loadCategories() {
-        // Пробуем загрузить из iCloud
-        if let data = cloudStore.data(forKey: categoriesKey),
-           let decoded = try? JSONDecoder().decode([Category].self, from: data) {
-            categories = decoded
-            return
+        if isICloudSyncActive {
+            // Пробуем загрузить из iCloud
+            if let data = cloudStore.data(forKey: categoriesKey),
+               let decoded = try? JSONDecoder().decode([Category].self, from: data) {
+                categories = decoded
+                return
+            }
         }
 
         // Фолбэк на локальное хранилище (для миграции старых данных)
@@ -195,20 +199,24 @@ class DataRepository: ObservableObject {
             return
         }
         // Сохраняем в iCloud
-        cloudStore.set(encoded, forKey: categoriesKey)
+        if isICloudSyncActive {
+            cloudStore.set(encoded, forKey: categoriesKey)
+            // Запускаем синхронизацию
+            cloudStore.synchronize()
+        }
         // Также сохраняем локально как резервную копию
         UserDefaults.standard.set(encoded, forKey: categoriesKey)
-        // Запускаем синхронизацию
-        cloudStore.synchronize()
         logger.info("Saved \(self.categories.count) categories")
     }
 
     private func loadItems() {
-        // Пробуем загрузить из iCloud
-        if let data = cloudStore.data(forKey: itemsKey),
-           let decoded = try? JSONDecoder().decode([Item].self, from: data) {
-            items = decoded
-            return
+        if isICloudSyncActive {
+            // Пробуем загрузить из iCloud
+            if let data = cloudStore.data(forKey: itemsKey),
+               let decoded = try? JSONDecoder().decode([Item].self, from: data) {
+                items = decoded
+                return
+            }
         }
 
         // Фолбэк на локальное хранилище (для миграции старых данных)
@@ -227,19 +235,23 @@ class DataRepository: ObservableObject {
             return
         }
         // Сохраняем в iCloud
-        cloudStore.set(encoded, forKey: itemsKey)
+        if isICloudSyncActive {
+            cloudStore.set(encoded, forKey: itemsKey)
+            // Запускаем синхронизацию
+            cloudStore.synchronize()
+        }
         // Также сохраняем локально как резервную копию
         UserDefaults.standard.set(encoded, forKey: itemsKey)
-        // Запускаем синхронизацию
-        cloudStore.synchronize()
         logger.info("Saved \(self.items.count) items")
     }
 
     private func loadHistory() {
-        if let data = cloudStore.data(forKey: historyKey),
-           let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
-            history = decoded
-            return
+        if isICloudSyncActive {
+            if let data = cloudStore.data(forKey: historyKey),
+               let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
+                history = decoded
+                return
+            }
         }
 
         if let data = UserDefaults.standard.data(forKey: historyKey),
@@ -254,9 +266,11 @@ class DataRepository: ObservableObject {
             logger.error("Failed to encode history")
             return
         }
-        cloudStore.set(encoded, forKey: historyKey)
+        if isICloudSyncActive {
+            cloudStore.set(encoded, forKey: historyKey)
+            cloudStore.synchronize()
+        }
         UserDefaults.standard.set(encoded, forKey: historyKey)
-        cloudStore.synchronize()
         logger.info("Saved \(self.history.count) history events")
     }
 
@@ -512,6 +526,60 @@ class DataRepository: ObservableObject {
         updateCategoryCounts()
         scheduleNotifications()
     }
+
+    // MARK: - Demo Data (Debug)
+    #if DEBUG
+    func addDemoData() {
+        let demoCategories = [
+            ("Демо мясо", "🍖", "#FF3B30"),
+            ("Демо рыба", "🐟", "#5AC8FA"),
+            ("Демо овощи", "🥦", "#34C759"),
+            ("Демо ягоды", "🫐", "#AF52DE"),
+            ("Демо готовое", "🥡", "#FF9500"),
+            ("Демо десерты", "🍨", "#FF2D55"),
+            ("Демо напитки", "🥤", "#007AFF"),
+            ("Демо супы", "🍲", "#FF9F0A"),
+            ("Демо тесто", "🥟", "#FFD60A")
+        ]
+
+        var createdCategoryIds: [String] = []
+        for (name, icon, color) in demoCategories {
+            let category = Category(name: name, icon: icon, color: color, sortOrder: categories.count)
+            addCategory(category)
+            createdCategoryIds.append(category.id)
+        }
+
+        let itemNames = [
+            "Куриные бедра", "Говядина тушеная", "Филе лосося", "Креветки очищенные",
+            "Брокколи", "Цветная капуста", "Черника", "Малина",
+            "Пельмени домашние", "Лазанья", "Картофельное пюре", "Борщ",
+            "Суп-пюре", "Смузи клубничный", "Мороженое ваниль", "Сорбет манго",
+            "Булочки", "Пицца сырная", "Хинкали", "Мидии в соусе"
+        ]
+
+        for (index, name) in itemNames.enumerated() {
+            let categoryIndex = index % createdCategoryIds.count
+            guard categoryIndex < createdCategoryIds.count else { continue }
+            let categoryId = createdCategoryIds[categoryIndex]
+            let daysAgo = Int.random(in: 1...30)
+            let shelf = (index % 4) + 1
+            let freezeDate = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
+            let expirationDate = Calendar.current.date(byAdding: .day, value: 60 - daysAgo, to: Date()) ?? Date()
+
+            let item = Item(
+                name: name,
+                packagesCount: Int.random(in: 1...4),
+                itemsCount: Int.random(in: 1...8),
+                shelfNumber: shelf,
+                freezeDate: freezeDate,
+                expirationDate: expirationDate,
+                notes: "Демо",
+                categoryId: categoryId
+            )
+            addItem(item)
+        }
+    }
+    #endif
 
     // MARK: - Notifications
     private func scheduleNotifications() {

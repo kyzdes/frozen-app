@@ -32,19 +32,31 @@ struct ItemRow: View {
 
     private var expirationText: String {
         if item.isExpired {
-            return "Просрочено"
+            return NSLocalizedString("Просрочено", comment: "Expired item state")
         } else if item.isExpiringSoon {
-            return "\(item.daysUntilExpiration) \(daysWord)"
+            return "\(abs(item.daysUntilExpiration)) \(daysWord)"
         } else {
-            return "Свежее"
+            return NSLocalizedString("Свежее", comment: "Fresh item state")
         }
     }
 
     private var daysWord: String {
         let count = abs(item.daysUntilExpiration)
-        if count % 10 == 1 && count % 100 != 11 { return "день" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
-        return "дней"
+        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("день", comment: "day, singular") }
+        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("дня", comment: "day, few") }
+        return NSLocalizedString("дней", comment: "day, many")
+    }
+
+    private var packagesAbbreviation: String {
+        NSLocalizedString("уп.", comment: "packages abbreviation")
+    }
+
+    private var piecesAbbreviation: String {
+        NSLocalizedString("шт.", comment: "pieces abbreviation")
+    }
+
+    private var shelfText: String {
+        String(format: NSLocalizedString("Полка %d", comment: "Shelf number"), item.shelfNumber)
     }
 
     var body: some View {
@@ -58,13 +70,13 @@ struct ItemRow: View {
                     if showSummaryText || showShelfPill {
                         HStack(spacing: Theme.Spacing.sm) {
                             if showSummaryText {
-                                Label("\(item.packagesCount) уп. • \(item.itemsCount) шт.", systemImage: "shippingbox")
+                                Label("\(item.packagesCount) \(packagesAbbreviation) • \(item.itemsCount) \(piecesAbbreviation)", systemImage: "shippingbox")
                                     .font(Theme.Typography.subheadline)
                                     .foregroundColor(Theme.Colors.textSecondary)
                             }
 
                             if showShelfPill {
-                                Text("Полка \(item.shelfNumber)")
+                                Text(shelfText)
                                     .font(Theme.Typography.caption)
                                     .foregroundColor(Theme.Colors.textPrimary)
                                     .padding(.horizontal, Theme.Spacing.sm)
@@ -119,7 +131,7 @@ struct ItemRow: View {
 
                 HStack(spacing: Theme.Spacing.md) {
                     Button(action: onEdit) {
-                        Label("Редактировать", systemImage: "pencil")
+                        Label(LK("Редактировать"), systemImage: "pencil")
                             .font(Theme.Typography.callout)
                     }
                     .buttonStyle(.borderless)
@@ -127,7 +139,7 @@ struct ItemRow: View {
                     Spacer()
 
                     Button(role: .destructive, action: onDelete) {
-                        Label("Удалить", systemImage: "trash")
+                        Label(LK("Удалить"), systemImage: "trash")
                             .font(Theme.Typography.callout)
                     }
                 }
@@ -150,7 +162,7 @@ struct ItemRow: View {
         disableDecrement: Bool
     ) -> some View {
         HStack(spacing: Theme.Spacing.xs) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(Theme.Typography.caption)
                 .foregroundColor(Theme.Colors.textSecondary)
                 .frame(width: 28, alignment: .trailing)

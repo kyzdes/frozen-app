@@ -21,8 +21,8 @@ struct CategoryFormView: View {
 
     private var nameError: String? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "Введите название" }
-        if trimmed.count < 2 { return "Слишком короткое название" }
+        if trimmed.isEmpty { return LKS("Введите название") }
+        if trimmed.count < 2 { return LKS("Слишком короткое название") }
         return nil
     }
 
@@ -36,11 +36,11 @@ struct CategoryFormView: View {
                     VStack(spacing: Theme.Spacing.xl) {
                         // Name Input
                         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("НАЗВАНИЕ")
+                            Text(LK("НАЗВАНИЕ"))
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
-                            TextField("Название категории", text: $name)
+                            TextField(LK("Название категории"), text: $name)
                                 .font(Theme.Typography.body)
                                 .padding(Theme.Spacing.md)
                                 .background(Theme.Colors.cardBackground)
@@ -59,11 +59,11 @@ struct CategoryFormView: View {
 
                         // Icon Selector
                         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("ИКОНКА")
+                            Text(LK("ИКОНКА"))
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
-                            Text("Выберите из палитры или оставьте без эмодзи")
+                            Text(LK("Выберите из палитры или оставьте без эмодзи"))
                                 .font(Theme.Typography.subheadline)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
@@ -96,7 +96,7 @@ struct CategoryFormView: View {
 
                         // Color Selector
                         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("ЦВЕТ")
+                            Text(LK("ЦВЕТ"))
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
@@ -120,7 +120,7 @@ struct CategoryFormView: View {
 
                         // Preview
                         VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("ПРЕДПРОСМОТР")
+                            Text(LK("ПРЕДПРОСМОТР"))
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
@@ -134,7 +134,7 @@ struct CategoryFormView: View {
                                         .font(.system(size: 24))
                                 }
 
-                                Text(name.isEmpty ? "Название категории" : name)
+                                Text(name.isEmpty ? LKS("Название категории") : name)
                                     .font(Theme.Typography.body)
                                     .foregroundColor(Theme.Colors.textPrimary)
 
@@ -153,7 +153,7 @@ struct CategoryFormView: View {
                                 } label: {
                                     HStack {
                                         Spacer()
-                                        Text("Удалить категорию")
+                                        Text(LK("Удалить категорию"))
                                             .font(Theme.Typography.body)
                                             .foregroundColor(.white)
                                         Spacer()
@@ -169,29 +169,29 @@ struct CategoryFormView: View {
                     .padding(Theme.Spacing.lg)
                 }
             }
-            .navigationTitle(category == nil ? "Новая категория" : "Редактировать")
+            .navigationTitle(category == nil ? LK("Новая категория") : LK("Редактировать"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
+                    Button(LK("Отмена")) {
                         dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(category == nil ? "Добавить" : "Сохранить") {
+                    Button(category == nil ? LK("Добавить") : LK("Сохранить")) {
                         saveCategory()
                     }
                     .disabled(nameError != nil)
                 }
             }
-            .alert("Удалить категорию?", isPresented: $showingDeleteConfirmation) {
-                Button("Отмена", role: .cancel) { }
-                Button("Удалить", role: .destructive) {
+            .alert(LK("Удалить категорию?"), isPresented: $showingDeleteConfirmation) {
+                Button(LK("Отмена"), role: .cancel) { }
+                Button(LK("Удалить"), role: .destructive) {
                     deleteCategory()
                 }
             } message: {
-                Text("Все заготовки в этой категории также будут удалены. Это действие нельзя отменить.")
+                Text(LK("Все заготовки в этой категории также будут удалены. Это действие нельзя отменить."))
             }
         }
     }

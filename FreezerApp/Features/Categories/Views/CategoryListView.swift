@@ -120,16 +120,16 @@ struct CategoryListView: View {
 
     private var itemsWord: String {
         let count = totalItems
-        if count % 10 == 1 && count % 100 != 11 { return "заготовка" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "заготовки" }
-        return "заготовок"
+        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("заготовка", comment: "item singular") }
+        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("заготовки", comment: "items few") }
+        return NSLocalizedString("заготовок", comment: "items many")
     }
 
     private var categoriesWord: String {
         let count = repository.categories.count
-        if count % 10 == 1 && count % 100 != 11 { return "категории" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "категориях" }
-        return "категориях"
+        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("категории", comment: "categories plural") }
+        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("категориях", comment: "categories few") }
+        return NSLocalizedString("категориях", comment: "categories many")
     }
 
     // MARK: - Search & Filter
@@ -223,7 +223,7 @@ struct CategoryListView: View {
                     HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: expandedCategories.count == repository.categories.count ? "chevron.up" : "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
-                        Text(expandedCategories.count == repository.categories.count ? "Свернуть все" : "Развернуть все")
+                        Text(expandedCategories.count == repository.categories.count ? LK("Свернуть все") : LK("Развернуть все"))
                             .font(Theme.Typography.subheadline)
                     }
                     .padding(.horizontal, Theme.Spacing.md)
@@ -251,18 +251,18 @@ struct CategoryListView: View {
                 .font(.system(size: 64))
                 .foregroundColor(Theme.Colors.textTertiary)
 
-            Text("Нет категорий")
+            Text(LK("Нет категорий"))
                 .font(Theme.Typography.body)
                 .foregroundColor(Theme.Colors.textSecondary)
 
-            Text("Нажмите +, чтобы создать первую категорию")
+            Text(LK("Нажмите +, чтобы создать первую категорию"))
                 .font(Theme.Typography.subheadline)
                 .foregroundColor(Theme.Colors.textTertiary)
 
             Button {
                 showingAddCategory = true
             } label: {
-                Label("Добавить категорию", systemImage: "plus.circle.fill")
+                Label(LK("Добавить категорию"), systemImage: "plus.circle.fill")
                     .font(Theme.Typography.callout)
                     .padding(.horizontal, Theme.Spacing.lg)
                     .padding(.vertical, Theme.Spacing.sm)
@@ -314,7 +314,7 @@ struct CategoryListView: View {
                 NavigationLink(value: category) {
                     HStack {
                         Spacer()
-                        Text(items.isEmpty ? "Добавить +" : "Открыть полный список")
+                        Text(items.isEmpty ? LK("Добавить +") : LK("Открыть полный список"))
                             .font(Theme.Typography.body)
                             .foregroundColor(Theme.Colors.primary)
                         if !items.isEmpty {
@@ -411,7 +411,7 @@ private struct HistoryView: View {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 48))
                             .foregroundColor(Theme.Colors.textTertiary)
-                        Text("История пуста")
+                        Text(LK("История пуста"))
                             .font(Theme.Typography.body)
                             .foregroundColor(Theme.Colors.textSecondary)
                     }
@@ -430,29 +430,29 @@ private struct HistoryView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("История")
+        .navigationTitle(LK("История"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var controls: some View {
         Section {
             HStack {
-                Text("Сортировка")
+                Text(LK("Сортировка"))
                     .foregroundColor(Theme.Colors.textSecondary)
                     .font(Theme.Typography.subheadline)
 
                 Spacer()
 
                 Picker("", selection: $sortDescending) {
-                    Text("Новые").tag(true)
-                    Text("Старые").tag(false)
+                    Text(LK("Новые")).tag(true)
+                    Text(LK("Старые")).tag(false)
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 180)
             }
 
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                Text("Фильтр по дате")
+                Text(LK("Фильтр по дате"))
                     .foregroundColor(Theme.Colors.textSecondary)
                     .font(Theme.Typography.subheadline)
 
@@ -473,7 +473,7 @@ private struct HistoryView: View {
                     } label: {
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "arrow.uturn.backward.circle")
-                            Text("Сбросить")
+                            Text(LK("Сбросить"))
                         }
                         .font(Theme.Typography.caption)
                     }
@@ -491,21 +491,21 @@ private struct HistoryRow: View {
     private var subtitle: String {
         switch event.type {
         case .itemAdded:
-            return "Добавлено"
+            return LKS("Добавлено")
         case .itemUpdated:
-            return "Обновлено"
+            return LKS("Обновлено")
         case .itemDeleted:
-            return "Удалено"
+            return LKS("Удалено")
         case .packagesChanged:
             if let delta = event.packagesDelta {
-                return "Упаковки: \(delta > 0 ? "+" : "")\(delta)"
+                return "\(LKS("Упаковки изменены")): \(delta > 0 ? "+" : "")\(delta)"
             }
-            return "Упаковки изменены"
+            return LKS("Упаковки изменены")
         case .itemsChanged:
             if let delta = event.itemsDelta {
-                return "Штуки: \(delta > 0 ? "+" : "")\(delta)"
+                return "\(LKS("Количество изменено")): \(delta > 0 ? "+" : "")\(delta)"
             }
-            return "Количество изменено"
+            return LKS("Количество изменено")
         }
     }
 
