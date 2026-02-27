@@ -161,16 +161,6 @@ class DataRepository: ObservableObject {
         loadItems()
         loadHistory()
 
-        // Initialize with sample data if empty
-        if categories.isEmpty {
-            categories = [
-                Category(name: "Овощи", icon: "🥬", color: "#34C759", sortOrder: 0),
-                Category(name: "Мясо", icon: "🍖", color: "#FF3B30", sortOrder: 1),
-                Category(name: "Ягоды", icon: "🫐", color: "#AF52DE", sortOrder: 2)
-            ]
-            saveCategories()
-        }
-
         updateCategoryCounts()
     }
 
@@ -281,6 +271,16 @@ class DataRepository: ObservableObject {
             categories[index].itemCount = count
         }
         saveCategories()
+    }
+
+    func clearAllLocalData() {
+        categories = []
+        items = []
+        history = []
+        saveCategories()
+        saveItems()
+        saveHistory()
+        notificationService.removeAllPendingNotificationRequests()
     }
 
     // MARK: - Category Operations

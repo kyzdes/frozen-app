@@ -9,6 +9,10 @@ interface AnalyticsEventBody {
   pair_id?: string;
   timestamp?: string;
   properties?: Record<string, string>;
+  platform?: 'ios' | 'web';
+  app_version?: string;
+  client_ts?: string;
+  session_id?: string;
 }
 
 const allowedEvents = new Set([
@@ -36,7 +40,18 @@ const allowedEvents = new Set([
 
 const analyticsRoutes: FastifyPluginAsync = async (server) => {
   server.post<{ Body: AnalyticsEventBody }>('/analytics', async (request, reply) => {
-    const { event, device_id, user_id, pair_id, timestamp, properties = {} } = request.body;
+    const {
+      event,
+      device_id,
+      user_id,
+      pair_id,
+      timestamp,
+      properties = {},
+      platform,
+      app_version,
+      client_ts,
+      session_id,
+    } = request.body;
 
     if (!event || !device_id) {
       return reply.status(400).send({ error: 'INVALID_PAYLOAD', message: 'event and device_id are required' });
@@ -58,6 +73,10 @@ const analyticsRoutes: FastifyPluginAsync = async (server) => {
       pairId: pair_id,
       timestamp: eventTime.toISOString(),
       properties,
+      platform: platform || 'unknown',
+      appVersion: app_version || 'unknown',
+      clientTs: client_ts || null,
+      sessionId: session_id || null,
     });
 
     return { success: true };

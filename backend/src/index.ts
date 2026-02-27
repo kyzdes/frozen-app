@@ -8,6 +8,7 @@ import logger from './utils/logger.js';
 import pairRoutes from './routes/pair.js';
 import syncRoutes from './routes/sync.js';
 import analyticsRoutes from './routes/analytics.js';
+import authRoutes from './routes/auth.js';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -19,6 +20,7 @@ async function start() {
     logger.info('Database connected successfully');
 
     // Register routes
+    server.register(authRoutes, { prefix: '/auth' });
     server.register(pairRoutes, { prefix: '/pair' });
     server.register(syncRoutes, { prefix: '/sync' });
     server.register(analyticsRoutes);

@@ -15,7 +15,8 @@ class KeychainService {
     // MARK: - Keys
     private enum Keys {
         static let deviceId = "com.freezerapp.deviceId"
-        static let authToken = "com.freezerapp.authToken"
+        static let accessToken = "com.freezerapp.accessToken"
+        static let refreshToken = "com.freezerapp.refreshToken"
         static let pairId = "com.freezerapp.pairId"
         static let userId = "com.freezerapp.userId"
     }
@@ -32,20 +33,24 @@ class KeychainService {
         }
     }
 
-    // Generate a new deviceId (useful when switching pairs)
-    func generateNewDeviceId() -> String {
-        let newId = UUID().uuidString
-        try? saveString(newId, forKey: Keys.deviceId)
-        return newId
-    }
-
-    var authToken: String? {
-        get { try? getString(forKey: Keys.authToken) }
+    var accessToken: String? {
+        get { try? getString(forKey: Keys.accessToken) }
         set {
             if let token = newValue {
-                try? saveString(token, forKey: Keys.authToken)
+                try? saveString(token, forKey: Keys.accessToken)
             } else {
-                try? deleteItem(forKey: Keys.authToken)
+                try? deleteItem(forKey: Keys.accessToken)
+            }
+        }
+    }
+
+    var refreshToken: String? {
+        get { try? getString(forKey: Keys.refreshToken) }
+        set {
+            if let token = newValue {
+                try? saveString(token, forKey: Keys.refreshToken)
+            } else {
+                try? deleteItem(forKey: Keys.refreshToken)
             }
         }
     }
@@ -72,19 +77,35 @@ class KeychainService {
         }
     }
 
-    // MARK: - Clear All Data
+    // Legacy aliases for backward compatibility
+    var authToken: String? {
+        get { accessToken }
+        set { accessToken = newValue }
+    }
+
+    // MARK: - Session helpers
+    var isAuthenticated: Bool {
+        accessToken != nil && refreshToken != nil && userId != nil
+    }
+
+    func saveAuthSession(accessToken: String, refreshToken: String, userId: String, pairId: String?) {
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.userId = userId
+        self.pairId = pairId
+    }
+
+    // MARK: - Clear Data
     func clearAllData() {
-        try? deleteItem(forKey: Keys.authToken)
+        try? deleteItem(forKey: Keys.accessToken)
+        try? deleteItem(forKey: Keys.refreshToken)
         try? deleteItem(forKey: Keys.pairId)
         try? deleteItem(forKey: Keys.userId)
         // Keep deviceId
     }
 
-    // MARK: - Clear Everything (including deviceId)
     func clearEverything() {
-        try? deleteItem(forKey: Keys.authToken)
-        try? deleteItem(forKey: Keys.pairId)
-        try? deleteItem(forKey: Keys.userId)
+        clearAllData()
         try? deleteItem(forKey: Keys.deviceId)
     }
 
@@ -100,7 +121,6 @@ class KeychainService {
             kSecValueData as String: data
         ]
 
-        // Try to delete existing item first
         SecItemDelete(query as CFDictionary)
 
         let status = SecItemAdd(query as CFDictionary, nil)

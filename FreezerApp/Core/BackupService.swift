@@ -52,7 +52,7 @@ final class BackupService {
 
         do {
             let data = try encoder.encode(backup)
-            logger.info("Data exported successfully: \(categories.count) categories, \(items.count) items")
+            logger.info("Data exported successfully: \(categories.count) groups, \(items.count) items")
             return data
         } catch {
             logger.error("Failed to export data: \(error.localizedDescription)")
@@ -87,7 +87,7 @@ final class BackupService {
 
         do {
             let backup = try decoder.decode(BackupData.self, from: data)
-            logger.info("Data imported successfully: \(backup.categories.count) categories, \(backup.items.count) items")
+            logger.info("Data imported successfully: \(backup.categories.count) groups, \(backup.items.count) items")
             return backup
         } catch {
             logger.error("Failed to import data: \(error.localizedDescription)")
@@ -119,7 +119,7 @@ final class BackupService {
         let categoryIds = backup.categories.map { $0.id }
         let uniqueCategoryIds = Set(categoryIds)
         if categoryIds.count != uniqueCategoryIds.count {
-            issues.append("Обнаружены дубликаты ID категорий")
+            issues.append("Обнаружены дубликаты ID групп")
         }
 
         // Проверка дубликатов ID в заготовках
@@ -133,7 +133,7 @@ final class BackupService {
         let validCategoryIds = Set(backup.categories.map { $0.id })
         let orphanedItems = backup.items.filter { !validCategoryIds.contains($0.categoryId) }
         if !orphanedItems.isEmpty {
-            issues.append("Найдено \(orphanedItems.count) заготовок без категории")
+            issues.append("Найдено \(orphanedItems.count) заготовок без группы")
         }
 
         if issues.isEmpty {

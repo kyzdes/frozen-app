@@ -7,10 +7,10 @@ class SyncService: ObservableObject {
 
     @Published var syncStatus: SyncStatus = SyncStatus()
     @Published var currentPair: Pair?
+    @Published var pairMode: String = "none"
 
     private let apiClient = APIClient.shared
     private let keychain = KeychainService.shared
-    private let analytics = AnalyticsService.shared
     private var syncTimer: Timer?
     private var pendingChanges: [PendingChange] = []
     private var lastKnownVersion: Int64 = 0
@@ -22,213 +22,107 @@ class SyncService: ObservableObject {
 
     // MARK: - Setup
     private func setupInitialState() {
-        // Check if user is already in a pair
-        if let pairId = keychain.pairId, keychain.authToken != nil {
-            // Restore pair state so UI reflects existing connection
-            currentPair = Pair(id: pairId, name: "Общий холодильник", serverVersion: lastKnownVersion)
-
-            // Start syncing
+        if let pairId = keychain.pairId, keychain.accessToken != nil {
+            currentPair = Pair(id: pairId, name: "Холодильник", serverVersion: lastKnownVersion)
+            pairMode = "personal"
             startPeriodicSync()
         }
+    }
+
+    func applyAuthContext(user: APIClient.AuthUser, pairContext: APIClient.PairContext) {
+        keychain.userId = user.id
+        keychain.pairId = pairContext.activePairId
+
+        if let pairId = pairContext.activePairId {
+            currentPair = Pair(
+                id: pairId,
+                name: pairContext.activePairName ?? "Холодильник",
+                serverVersion: 0
+            )
+            pairMode = pairContext.mode
+            lastKnownVersion = 0
+            pendingChanges.removeAll()
+            syncStatus = SyncStatus()
+            startPeriodicSync()
+        } else {
+            stopPeriodicSync()
+            currentPair = nil
+            pairMode = "none"
+            lastKnownVersion = 0
+        }
+    }
+
+    func clearSession() {
+        stopPeriodicSync()
+        keychain.clearAllData()
+        currentPair = nil
+        pairMode = "none"
+        lastKnownVersion = 0
+        pendingChanges.removeAll()
+        syncStatus = SyncStatus()
     }
 
     // MARK: - Pair Management
     func createPair(name: String) async throws -> String {
-        print("🔵 SyncService: createPair called with name: \(name)")
+        let response = try await apiClient.createPair(pairName: name)
 
-        // Stop any active sync
-        stopPeriodicSync()
+        keychain.accessToken = response.accessToken
+        keychain.pairId = response.pairId
+        keychain.userId = response.userId
 
-        // Clear old pair data to allow creating new pair
-        if keychain.pairId != nil {
-            print("⚠️ SyncService: Clearing old pair data")
-            keychain.clearAllData()
-            currentPair = nil
-            lastKnownVersion = 0
-            pendingChanges.removeAll()
-            syncStatus = SyncStatus()
-        }
+        lastKnownVersion = Int64(response.serverVersion) ?? 0
+        currentPair = Pair(id: response.pairId, name: name, serverVersion: lastKnownVersion)
+        pairMode = response.pairContext.mode
 
-        // Generate fresh deviceId to avoid conflicts
-        let deviceId = keychain.generateNewDeviceId()
-        print("🔵 SyncService: Generated new deviceId: \(deviceId)")
-
-        do {
-            let response = try await apiClient.createPair(deviceId: deviceId, pairName: name)
-            print("✅ SyncService: Pair created successfully")
-
-            // Save credentials
-            keychain.authToken = response.token
-            keychain.pairId = response.pairId
-            keychain.userId = response.userId
-
-            // Update state
-            lastKnownVersion = Int64(response.serverVersion) ?? 0
-            currentPair = Pair(
-                id: response.pairId,
-                name: name,
-                serverVersion: lastKnownVersion
-            )
-
-            // Start syncing
-            startPeriodicSync()
-            analytics.trackPairCreated(pairId: response.pairId)
-
-            return response.inviteCode
-        } catch let error as APIError {
-            print("❌ SyncService: createPair failed - \(error)")
-
-            // If still getting 409 conflict, try one more time with another new deviceId
-            if case .serverError(let message) = error,
-               message.contains("already belongs to a pair") {
-                print("🔄 SyncService: Retrying with another new deviceId")
-                let newDeviceId = keychain.generateNewDeviceId()
-
-                do {
-                    let retryResponse = try await apiClient.createPair(deviceId: newDeviceId, pairName: name)
-                    print("✅ SyncService: Pair created on retry")
-
-                    keychain.authToken = retryResponse.token
-                    keychain.pairId = retryResponse.pairId
-                    keychain.userId = retryResponse.userId
-
-                    lastKnownVersion = Int64(retryResponse.serverVersion) ?? 0
-                    currentPair = Pair(
-                        id: retryResponse.pairId,
-                        name: name,
-                        serverVersion: lastKnownVersion
-                    )
-
-                    startPeriodicSync()
-                    analytics.trackPairCreated(pairId: retryResponse.pairId)
-                    return retryResponse.inviteCode
-                } catch {
-                    print("❌ SyncService: Retry also failed - \(error)")
-                    throw error
-                }
-            }
-
-            throw error
-        } catch {
-            print("❌ SyncService: createPair failed - \(error)")
-            throw error
-        }
+        startPeriodicSync()
+        return response.inviteCode
     }
 
-    func joinPair(inviteCode: String) async throws {
-        print("🔵 SyncService: joinPair called with code: \(inviteCode)")
+    func joinPair(inviteCode: String, importMode: String) async throws {
+        let response = try await apiClient.joinPair(inviteCode: inviteCode, importMode: importMode)
 
-        // Stop any active sync
-        stopPeriodicSync()
+        keychain.accessToken = response.accessToken
+        keychain.pairId = response.pairId
+        keychain.userId = response.userId
 
-        // Clear old pair data to allow joining new pair
-        if keychain.pairId != nil {
-            print("⚠️ SyncService: Clearing old pair data")
-            keychain.clearAllData()
-            currentPair = nil
-            lastKnownVersion = 0
-            pendingChanges.removeAll()
-            syncStatus = SyncStatus()
-        }
+        lastKnownVersion = Int64(response.serverVersion) ?? 0
+        currentPair = Pair(
+            id: response.pairId,
+            name: response.pairContext.activePairName ?? "Общий холодильник",
+            serverVersion: lastKnownVersion
+        )
+        pairMode = response.pairContext.mode
 
-        // Generate fresh deviceId to avoid conflicts
-        let deviceId = keychain.generateNewDeviceId()
-        print("🔵 SyncService: Generated new deviceId: \(deviceId)")
+        NotificationCenter.default.post(
+            name: .didReceiveInitialData,
+            object: nil,
+            userInfo: ["data": response.initialData]
+        )
 
-        do {
-            let response = try await apiClient.joinPair(deviceId: deviceId, inviteCode: inviteCode)
-            print("✅ SyncService: Joined pair successfully")
-
-            // Save credentials
-            keychain.authToken = response.token
-            keychain.pairId = response.pairId
-            keychain.userId = response.userId
-
-            // Update state
-            lastKnownVersion = Int64(response.serverVersion) ?? 0
-            currentPair = Pair(
-                id: response.pairId,
-                name: "Общий холодильник",
-                serverVersion: lastKnownVersion
-            )
-
-            // Apply initial data from server
-            // This will be handled by DataRepository
-            NotificationCenter.default.post(
-                name: .didReceiveInitialData,
-                object: nil,
-                userInfo: ["data": response.initialData]
-            )
-
-            // Start syncing
-            startPeriodicSync()
-            analytics.trackPairJoined(pairId: response.pairId)
-        } catch let error as APIError {
-            print("❌ SyncService: joinPair failed - \(error)")
-
-            // If still getting 409 conflict, try one more time with another new deviceId
-            if case .serverError(let message) = error,
-               message.contains("already belongs to a pair") {
-                print("🔄 SyncService: Retrying with another new deviceId")
-                let newDeviceId = keychain.generateNewDeviceId()
-
-                do {
-                    let retryResponse = try await apiClient.joinPair(deviceId: newDeviceId, inviteCode: inviteCode)
-                    print("✅ SyncService: Joined pair on retry")
-
-                    keychain.authToken = retryResponse.token
-                    keychain.pairId = retryResponse.pairId
-                    keychain.userId = retryResponse.userId
-
-                    lastKnownVersion = Int64(retryResponse.serverVersion) ?? 0
-                    currentPair = Pair(
-                        id: retryResponse.pairId,
-                        name: "Общий холодильник",
-                        serverVersion: lastKnownVersion
-                    )
-
-                    NotificationCenter.default.post(
-                        name: .didReceiveInitialData,
-                        object: nil,
-                        userInfo: ["data": retryResponse.initialData]
-                    )
-
-                    startPeriodicSync()
-                    analytics.trackPairJoined(pairId: retryResponse.pairId)
-                    return
-                } catch {
-                    print("❌ SyncService: Retry also failed - \(error)")
-                    throw error
-                }
-            }
-
-            throw error
-        } catch {
-            print("❌ SyncService: joinPair failed - \(error)")
-            throw error
-        }
+        startPeriodicSync()
     }
 
     func leavePair() async throws {
-        guard let token = keychain.authToken else { return }
+        let response = try await apiClient.leavePair()
 
-        stopPeriodicSync()
+        keychain.accessToken = response.accessToken
+        keychain.pairId = response.pairId
 
-        do {
-            try await apiClient.leavePair(token: token)
+        lastKnownVersion = Int64(response.serverVersion) ?? 0
+        currentPair = Pair(
+            id: response.pairId,
+            name: response.pairContext.activePairName ?? "Мой холодильник",
+            serverVersion: lastKnownVersion
+        )
+        pairMode = response.pairContext.mode
 
-            // Clear all data
-            keychain.clearAllData()
-            currentPair = nil
-            lastKnownVersion = 0
-            pendingChanges.removeAll()
-            syncStatus = SyncStatus()
+        NotificationCenter.default.post(
+            name: .didReceiveInitialData,
+            object: nil,
+            userInfo: ["data": response.initialData]
+        )
 
-            // Notify to clear local data
-            NotificationCenter.default.post(name: .didLeavePair, object: nil)
-        } catch {
-            throw error
-        }
+        startPeriodicSync()
     }
 
     // MARK: - Sync
@@ -241,42 +135,35 @@ class SyncService: ObservableObject {
         pendingChanges.append(change)
         syncStatus.pendingChangesCount = pendingChanges.count
 
-        // Trigger immediate sync if online
         Task {
             await performSync()
         }
     }
 
     private func performSync() async {
-        guard let token = keychain.authToken else { return }
+        guard keychain.accessToken != nil else { return }
         guard !isSyncing else { return }
 
         isSyncing = true
         syncStatus.state = .syncing
 
         do {
-            // Collect pending changes
             let changes = collectPendingChanges()
 
-            // Perform sync
             let response = try await apiClient.sync(
-                token: token,
                 lastKnownVersion: lastKnownVersion,
                 changes: changes
             )
 
-            // Update version
             if let newVersion = Int64(response.serverVersion) {
                 lastKnownVersion = newVersion
             }
 
-            // Clear applied changes
             if response.appliedChanges > 0 {
                 pendingChanges.removeAll()
                 syncStatus.pendingChangesCount = 0
             }
 
-            // Apply server changes
             if !response.serverChanges.categories.isEmpty ||
                !response.serverChanges.items.isEmpty ||
                !response.serverChanges.history.isEmpty {
@@ -287,10 +174,8 @@ class SyncService: ObservableObject {
                 )
             }
 
-            // Update status
             syncStatus.state = .success
             syncStatus.lastSyncDate = Date()
-
         } catch let error as APIError {
             handleSyncError(error)
         } catch {
@@ -332,10 +217,9 @@ class SyncService: ObservableObject {
     private func handleSyncError(_ error: APIError) {
         switch error {
         case .unauthorized:
-            syncStatus.state = .error("Токен истек")
-            stopPeriodicSync()
-            keychain.clearAllData()
-            currentPair = nil
+            syncStatus.state = .error("Сессия истекла")
+            clearSession()
+            NotificationCenter.default.post(name: .didAuthExpired, object: nil)
         case .networkError:
             syncStatus.state = .offline
         case .serverError(let message):
@@ -349,14 +233,12 @@ class SyncService: ObservableObject {
     private func startPeriodicSync() {
         stopPeriodicSync()
 
-        // Sync every 5 seconds in active mode
         syncTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.performSync()
             }
         }
 
-        // Perform initial sync
         Task {
             await performSync()
         }
@@ -406,4 +288,5 @@ extension Notification.Name {
     static let didReceiveInitialData = Notification.Name("didReceiveInitialData")
     static let didReceiveServerChanges = Notification.Name("didReceiveServerChanges")
     static let didLeavePair = Notification.Name("didLeavePair")
+    static let didAuthExpired = Notification.Name("didAuthExpired")
 }

@@ -9,6 +9,7 @@ struct JoinPairView: View {
     @State private var errorMessage: String?
     @State private var showWarning = false
     @State private var successMessage: String?
+    @State private var importMode: String = "replace"
 
     var body: some View {
         NavigationView {
@@ -56,7 +57,9 @@ struct JoinPairView: View {
                     performJoin()
                 }
             } message: {
-                Text("Ваши локальные данные будут заменены на данные общего холодильника. Это действие нельзя отменить.")
+                Text(importMode == "replace"
+                     ? "Ваши личные данные будут заменены на данные общего холодильника."
+                     : "Ваши личные данные будут перенесены в общий холодильник без дедупликации.")
             }
             .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
                 Button("OK") {
@@ -140,6 +143,38 @@ struct JoinPairView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Импорт данных")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 10) {
+                            Button {
+                                importMode = "replace"
+                            } label: {
+                                Text("Replace")
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(importMode == "replace" ? Color.blue : Color(.systemGray5))
+                                    .foregroundColor(importMode == "replace" ? .white : .primary)
+                                    .cornerRadius(10)
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                importMode = "merge"
+                            } label: {
+                                Text("Merge")
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(importMode == "merge" ? Color.blue : Color(.systemGray5))
+                                    .foregroundColor(importMode == "merge" ? .white : .primary)
+                                    .cornerRadius(10)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
                 .padding(20)
                 .background(Color(.systemBackground))
@@ -165,7 +200,9 @@ struct JoinPairView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    InfoRow(icon: "arrow.triangle.2.circlepath", text: "Ваши данные заменятся на данные общего холодильника")
+                    InfoRow(icon: "arrow.triangle.2.circlepath", text: importMode == "replace"
+                            ? "Личные данные будут заменены"
+                            : "Личные данные добавятся в общий холодильник")
                     InfoRow(icon: "person.2.fill", text: "Изменения синхронизируются между устройствами")
                     InfoRow(icon: "clock.fill", text: "Автоматическая синхронизация каждые 5 секунд")
                 }
@@ -306,7 +343,7 @@ struct JoinPairView: View {
 
         Task {
             do {
-                try await syncService.joinPair(inviteCode: inviteCode)
+                try await syncService.joinPair(inviteCode: inviteCode, importMode: importMode)
                 await MainActor.run {
                     successMessage = "Вы подключились к общему холодильнику"
                     isJoining = false

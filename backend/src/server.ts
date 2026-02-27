@@ -37,7 +37,7 @@ server.register(cors, {
 server.register(jwt, {
   secret: process.env.JWT_SECRET!,
   sign: {
-    expiresIn: '30d',
+    expiresIn: '15m',
   },
 });
 

@@ -26,9 +26,9 @@
 /* Home / Categories */
 "Свернуть все" = "Collapse all";
 "Развернуть все" = "Expand all";
-"Нет категорий" = "No categories";
-"Нажмите +, чтобы создать первую категорию" = "Tap + to create your first category";
-"Добавить категорию" = "Add category";
+"Нет категорий" = "No groups";
+"Нажмите +, чтобы создать первую категорию" = "Tap + to create your first group";
+"Добавить категорию" = "Add group";
 "Добавить +" = "Add +";
 "Открыть полный список" = "Open full list";
 "История" = "History";
@@ -48,8 +48,8 @@
 "заготовка" = "item";
 "заготовки" = "items";
 "заготовок" = "items";
-"категории" = "categories";
-"категориях" = "categories";
+"категории" = "group";
+"категориях" = "groups";
 
 /* Items list */
 "Все полки" = "All shelves";
@@ -83,15 +83,15 @@
 
 /* Category form */
 "НАЗВАНИЕ" = "NAME";
-"Название категории" = "Category name";
+"Название категории" = "Group name";
 "ИКОНКА" = "ICON";
 "Выберите из палитры или оставьте без эмодзи" = "Choose from the palette or leave empty";
 "ЦВЕТ" = "COLOR";
 "ПРЕДПРОСМОТР" = "PREVIEW";
-"Удалить категорию" = "Delete category";
-"Новая категория" = "New category";
-"Удалить категорию?" = "Delete category?";
-"Все заготовки в этой категории также будут удалены. Это действие нельзя отменить." = "All items in this category will also be deleted. This action cannot be undone.";
+"Удалить категорию" = "Delete group";
+"Новая категория" = "New group";
+"Удалить категорию?" = "Delete group?";
+"Все заготовки в этой категории также будут удалены. Это действие нельзя отменить." = "All items in this group will also be deleted. This action cannot be undone.";
 
 /* Item row */
 "Просрочено" = "Expired";
@@ -157,7 +157,7 @@
 "Выключена" = "Off";
 "Локальная синхронизация" = "Local sync";
 "При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID" = "With iCloud sync on, your data is automatically synced across devices on the same Apple ID";
-"Категорий" = "Categories";
+"Категорий" = "Groups";
 "Заготовок" = "Items";
 "Статистика" = "Stats";
 "Версия" = "Version";
@@ -177,7 +177,7 @@
 "Некорректные данные:\n%@" = "Invalid data:\n%@";
 "Не удалось сохранить файл: %@" = "Could not save file: %@";
 "Не удалось покинуть холодильник: %@" = "Could not leave the freezer: %@";
-"Будет импортировано %d категорий и %d заготовок. Текущие данные будут заменены." = "This will import %d categories and %d items. Current data will be replaced.";
+"Будет импортировано %d категорий и %d заготовок. Текущие данные будут заменены." = "This will import %d groups and %d items. Current data will be replaced.";
 "Покинуть холодильник?" = "Leave the freezer?";
 "Вы будете отключены от общего холодильника. Локальные данные останутся на устройстве." = "You will be disconnected from the shared freezer. Local data will stay on the device.";
 "Разрешите уведомления в настройках iOS" = "Allow notifications in iOS Settings";
@@ -215,10 +215,10 @@
 
 /* Backup validation */
 "Неподдерживаемая версия бэкапа: %@" = "Unsupported backup version: %@";
-"Обнаружены дубликаты ID категорий" = "Duplicate category IDs found";
+"Обнаружены дубликаты ID категорий" = "Duplicate group IDs found";
 "Обнаружены дубликаты ID заготовок" = "Duplicate item IDs found";
 "Некорректные записи истории" = "Invalid history records";
-"Найдено %d заготовок без категории" = "%d items without a category found";
+"Найдено %d заготовок без категории" = "%d items without a group found";
 
 /* Backup errors */
 "Нет доступа к файлу" = "No access to the file";
