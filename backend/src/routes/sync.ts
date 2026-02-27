@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { PoolClient } from 'pg';
 import db from '../config/database.js';
-import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
+import { authenticateWithActivePair, AuthenticatedRequest } from '../middleware/auth.js';
 import { SyncRequest, SyncResponse, Category, Item, HistoryEvent } from '../models/types.js';
 import { resolveConflict } from '../services/conflict-resolver.js';
 import { camelToSnake, snakeToCamel } from '../utils/key-transform.js';
@@ -11,7 +11,7 @@ const syncRoutes: FastifyPluginAsync = async (server) => {
   server.post<{ Body: SyncRequest; Reply: SyncResponse }>(
     '',
     {
-      onRequest: [authenticate],
+      onRequest: [authenticateWithActivePair],
       schema: {
         body: {
           type: 'object',
@@ -32,7 +32,7 @@ const syncRoutes: FastifyPluginAsync = async (server) => {
       },
     },
     async (request, reply) => {
-      const { pairId } = (request as AuthenticatedRequest).user;
+      const pairId = (request as AuthenticatedRequest).user.activePairId!;
       const body = request.body as any;
 
       // Accept both camelCase and snake_case for last_known_version
@@ -121,10 +121,10 @@ const syncRoutes: FastifyPluginAsync = async (server) => {
   server.get(
     '/status',
     {
-      onRequest: [authenticate],
+      onRequest: [authenticateWithActivePair],
     },
     async (request, reply) => {
-      const { pairId } = (request as AuthenticatedRequest).user;
+      const pairId = (request as AuthenticatedRequest).user.activePairId!;
 
       const result = await db.query(
         `SELECT p.server_version, p.updated_at,

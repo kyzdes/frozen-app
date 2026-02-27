@@ -32,7 +32,7 @@ struct CategoryFormView: View {
                                 .font(Theme.Typography.footnote)
                                 .foregroundColor(Theme.Colors.textSecondary)
 
-                            TextField("Название категории", text: $name)
+                            TextField("Название группы", text: $name)
                                 .font(Theme.Typography.body)
                                 .padding(Theme.Spacing.md)
                                 .background(Theme.Colors.cardBackground)
@@ -101,7 +101,7 @@ struct CategoryFormView: View {
                                         .font(.system(size: 24))
                                 }
 
-                                Text(name.isEmpty ? "Название категории" : name)
+                                Text(name.isEmpty ? "Название группы" : name)
                                     .font(Theme.Typography.body)
                                     .foregroundColor(Theme.Colors.textPrimary)
 
@@ -120,7 +120,7 @@ struct CategoryFormView: View {
                                 } label: {
                                     HStack {
                                         Spacer()
-                                        Text("Удалить категорию")
+                                        Text("Удалить группу")
                                             .font(Theme.Typography.body)
                                             .foregroundColor(.white)
                                         Spacer()
@@ -136,7 +136,7 @@ struct CategoryFormView: View {
                     .padding(Theme.Spacing.lg)
                 }
             }
-            .navigationTitle(category == nil ? "Новая категория" : "Редактировать")
+            .navigationTitle(category == nil ? "Новая группа" : "Редактировать")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -152,13 +152,13 @@ struct CategoryFormView: View {
                     .disabled(name.isEmpty)
                 }
             }
-            .alert("Удалить категорию?", isPresented: $showingDeleteConfirmation) {
+            .alert("Удалить группу?", isPresented: $showingDeleteConfirmation) {
                 Button("Отмена", role: .cancel) { }
                 Button("Удалить", role: .destructive) {
                     deleteCategory()
                 }
             } message: {
-                Text("Все заготовки в этой категории также будут удалены. Это действие нельзя отменить.")
+                Text("Все заготовки в этой группе также будут удалены. Это действие нельзя отменить.")
             }
         }
     }

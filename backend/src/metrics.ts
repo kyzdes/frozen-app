@@ -13,6 +13,30 @@ export const analyticsEventsCounter = new Counter({
   registers: [register],
 });
 
+export const authLoginSuccessCounter = new Counter({
+  name: 'freezer_auth_login_success_total',
+  help: 'Count of successful login events',
+  registers: [register],
+});
+
+export const authLoginFailCounter = new Counter({
+  name: 'freezer_auth_login_fail_total',
+  help: 'Count of failed login events',
+  registers: [register],
+});
+
+export const authRefreshSuccessCounter = new Counter({
+  name: 'freezer_auth_refresh_success_total',
+  help: 'Count of successful refresh token exchanges',
+  registers: [register],
+});
+
+export const authRefreshFailCounter = new Counter({
+  name: 'freezer_auth_refresh_fail_total',
+  help: 'Count of failed refresh token exchanges',
+  registers: [register],
+});
+
 // HTTP request duration histogram
 export const httpRequestDuration = new Histogram({
   name: 'freezer_http_request_duration_seconds',

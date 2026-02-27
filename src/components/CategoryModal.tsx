@@ -70,7 +70,7 @@ export function CategoryModal({ category, onClose, onSave }: CategoryModalProps)
           </button>
           
           <h2 className="text-[17px] text-[#1C1C1E]">
-            {category ? 'Редактировать категорию' : 'Новая категория'}
+            {category ? 'Редактировать группу' : 'Новая группа'}
           </h2>
           
           <button
@@ -95,7 +95,7 @@ export function CategoryModal({ category, onClose, onSave }: CategoryModalProps)
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Название категории"
+              placeholder="Название группы"
               autoFocus
               className="w-full text-[17px] text-[#1C1C1E] bg-[#F2F7FA] rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-[#5B9FD3]/30"
             />
@@ -160,7 +160,7 @@ export function CategoryModal({ category, onClose, onSave }: CategoryModalProps)
                 {selectedIcon}
               </div>
               <span className="text-[17px] text-[#1C1C1E]">
-                {name || 'Название категории'}
+                {name || 'Название группы'}
               </span>
             </div>
           </div>

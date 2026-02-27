@@ -19,6 +19,7 @@ enum AppearanceMode: String, CaseIterable {
 struct SettingsView: View {
     @EnvironmentObject var repository: DataRepository
     @EnvironmentObject var syncService: SyncService
+    @EnvironmentObject var authState: AuthState
     @Environment(\.dismiss) var dismiss
 
     @AppStorage("appLanguage") private var appLanguage: String = "ru"
@@ -50,6 +51,7 @@ struct SettingsView: View {
                 notificationsSection
                 if notificationsEnabled { notificationDaysSection }
                 syncSection
+                accountSection
                 if FeatureFlags.is_icloud_sync_active { iCloudSection }
                 statsSection
                 appInfoSection
@@ -86,7 +88,7 @@ struct SettingsView: View {
                     Text(
                         String(
                             format: NSLocalizedString(
-                                "Будет импортировано %d категорий и %d заготовок. Текущие данные будут заменены.",
+                                "Будет импортировано %d групп и %d заготовок. Текущие данные будут заменены.",
                                 comment: ""
                             ),
                             backup.categories.count,
@@ -268,15 +270,41 @@ struct SettingsView: View {
                     }
                 }
 
-                Button(role: .destructive) {
-                    showLeavePairConfirmation = true
-                } label: {
-                    HStack {
-                        Image(systemName: "xmark.circle")
-                            .foregroundColor(.red)
-                        .frame(width: 24)
-                        Text("Покинуть холодильник")
-                            .foregroundColor(.red)
+                if syncService.pairMode == "shared" {
+                    Button(role: .destructive) {
+                        showLeavePairConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "xmark.circle")
+                                .foregroundColor(.red)
+                            .frame(width: 24)
+                            Text("Покинуть холодильник")
+                                .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    Button {
+                        showCreatePair = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle")
+                                .foregroundColor(Theme.Colors.primary)
+                                .frame(width: 24)
+                            Text("Создать общий холодильник")
+                                .foregroundColor(Theme.Colors.textPrimary)
+                        }
+                    }
+
+                    Button {
+                        showJoinPair = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "link")
+                                .foregroundColor(Theme.Colors.primary)
+                                .frame(width: 24)
+                            Text("Подключиться к холодильнику")
+                                .foregroundColor(Theme.Colors.textPrimary)
+                        }
                     }
                 }
             } else {
@@ -316,6 +344,30 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
+    private var accountSection: some View {
+        Section {
+            Button(role: .destructive) {
+                Task {
+                    await authState.logout(syncService: syncService, repository: repository)
+                    dismiss()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .foregroundColor(.red)
+                        .frame(width: 24)
+                    Text("Выйти из аккаунта")
+                        .foregroundColor(.red)
+                }
+            }
+        } header: {
+            Text("Аккаунт")
+        } footer: {
+            Text("Выход очистит локальные данные и вернет на экран входа")
+        }
+    }
+
+    @ViewBuilder
     private var iCloudSection: some View {
         Section {
             HStack {
@@ -340,7 +392,7 @@ struct SettingsView: View {
     private var statsSection: some View {
         Section {
             HStack {
-                Text("Категорий")
+                Text("Групп")
                     .foregroundColor(Theme.Colors.textPrimary)
                 Spacer()
                 Text("\(repository.categories.count)")
@@ -498,7 +550,7 @@ struct SettingsView: View {
 
     private func exportData() {
         print("📤 Starting export...")
-        print("📊 Categories: \(repository.categories.count), Items: \(repository.items.count)")
+        print("📊 Groups: \(repository.categories.count), Items: \(repository.items.count)")
 
         do {
             let data = try backupService.exportData(

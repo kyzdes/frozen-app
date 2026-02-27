@@ -86,8 +86,8 @@ export function CategoryList({
       {categories.length === 0 && (
         <div className="px-4 py-16 text-center">
           <Snowflake className="w-16 h-16 text-[#C7D3DD] mx-auto mb-4" />
-          <p className="text-[#8E8E93] text-[17px]">Нет категорий</p>
-          <p className="text-[#C7C7CC] text-[15px] mt-1">Нажмите +, чтобы создать первую категорию</p>
+          <p className="text-[#8E8E93] text-[17px]">Нет групп</p>
+          <p className="text-[#C7C7CC] text-[15px] mt-1">Нажмите +, чтобы создать первую группу</p>
         </div>
       )}
 
@@ -109,7 +109,6 @@ function getItemsWord(count: number): string {
 }
 
 function getCategoriesWord(count: number): string {
-  if (count % 10 === 1 && count % 100 !== 11) return 'категории';
-  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'категориях';
-  return 'категориях';
+  if (count % 10 === 1 && count % 100 !== 11) return 'группе';
+  return 'группах';
 }

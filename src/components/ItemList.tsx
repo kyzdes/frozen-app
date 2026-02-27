@@ -56,7 +56,7 @@ export function ItemList({
           className="flex items-center gap-1 text-[#5B9FD3] text-[17px] mb-4 active:opacity-60"
         >
           <ChevronLeft className="w-5 h-5" />
-          <span>Категории</span>
+          <span>Группы</span>
         </button>
 
         <h1 className="text-[34px] tracking-tight text-[#1C1C1E] mb-1">{category.name}</h1>
