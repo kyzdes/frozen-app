@@ -1,21 +1,21 @@
 #!/bin/bash
 
-SERVER="root@89.22.237.148"
+SERVER="${SERVER:-root@<monitoring-host>}"
 REMOTE_PATH="/root/monitoring"
 
 echo "🚀 Deploying monitoring stack to server..."
 
 # 1. Create directory on server
 echo "📁 Creating monitoring directory..."
-ssh -o StrictHostKeyChecking=no ${SERVER} "mkdir -p ${REMOTE_PATH}"
+ssh -o StrictHostKeyChecking=accept-new ${SERVER} "mkdir -p ${REMOTE_PATH}"
 
 # 2. Copy all files to server
 echo "📤 Copying configuration files..."
-scp -r -o StrictHostKeyChecking=no . ${SERVER}:${REMOTE_PATH}/
+scp -r -o StrictHostKeyChecking=accept-new . ${SERVER}:${REMOTE_PATH}/
 
 # 3. Set up Nginx configuration
 echo "🔧 Setting up Nginx..."
-ssh -o StrictHostKeyChecking=no ${SERVER} << 'EOF'
+ssh -o StrictHostKeyChecking=accept-new ${SERVER} << 'EOF'
 # Copy Nginx config
 cp /root/monitoring/nginx-monitor.conf /etc/nginx/sites-available/monitor
 ln -sf /etc/nginx/sites-available/monitor /etc/nginx/sites-enabled/
@@ -29,7 +29,7 @@ EOF
 
 # 4. Start monitoring stack
 echo "🐳 Starting monitoring containers..."
-ssh -o StrictHostKeyChecking=no ${SERVER} << 'EOF'
+ssh -o StrictHostKeyChecking=accept-new ${SERVER} << 'EOF'
 cd /root/monitoring
 docker compose up -d
 

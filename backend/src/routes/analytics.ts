@@ -13,11 +13,25 @@ interface AnalyticsEventBody {
 
 const allowedEvents = new Set([
   'category_created',
+  'category_edited',
+  'category_deleted',
+  'categories_reordered',
+  'category_expanded',
+  'category_collapsed',
+  'all_categories_expanded',
+  'all_categories_collapsed',
   'item_created',
+  'item_edited',
+  'item_deleted',
+  'item_packages_updated',
+  'item_items_updated',
   'notifications_enabled',
   'pair_created',
   'pair_joined',
   'app_opened',
+  'search_performed',
+  'shelf_filter_applied',
+  'filter_cleared',
 ]);
 
 const analyticsRoutes: FastifyPluginAsync = async (server) => {

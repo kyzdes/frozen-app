@@ -1,17 +1,7 @@
 import { Pool } from 'pg';
+import logger from '../utils/logger.js';
 
-console.log('[DEBUG] DATABASE_URL:', process.env.DATABASE_URL);
-
-// Parse DATABASE_URL manually for better control
 const dbUrl = new URL(process.env.DATABASE_URL!);
-
-console.log('[DEBUG] Parsed DB config:', {
-  host: dbUrl.hostname,
-  port: dbUrl.port,
-  database: dbUrl.pathname.slice(1),
-  user: dbUrl.username,
-  password: dbUrl.password
-});
 
 const pool = new Pool({
   host: dbUrl.hostname,
@@ -25,8 +15,21 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  logger.warn({ err }, 'Unexpected error on idle client — pool will recover');
 });
+
+/** Test the DB connection with retries */
+export async function testConnection(retries = 5, delayMs = 2000): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await pool.query('SELECT NOW()');
+      return;
+    } catch (err) {
+      logger.warn({ attempt, retries, err }, 'Database connection attempt failed');
+      if (attempt === retries) throw err;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
 
 export default pool;

@@ -37,7 +37,7 @@ struct SettingsView: View {
     @State private var developerOptionsVisible = false
     @AppStorage("appearanceMode") private var appearanceMode: String = AppearanceMode.system.rawValue
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = false
-    @AppStorage("notificationDaysData") private var notificationDaysData: Data = try! JSONEncoder().encode([3, 7, 14])
+    @AppStorage("notificationDays") private var notificationDaysData: Data = try! JSONEncoder().encode([3, 7, 14])
 
     private let backupService = BackupService.shared
     private let notificationService = NotificationService.shared
@@ -53,7 +53,9 @@ struct SettingsView: View {
                 if FeatureFlags.is_icloud_sync_active { iCloudSection }
                 statsSection
                 appInfoSection
+                #if DEBUG
                 if developerOptionsVisible { developerToolsSection }
+                #endif
                 developerLinkSection
             }
             .navigationTitle("Настройки")
@@ -373,6 +375,7 @@ struct SettingsView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    #if DEBUG
                     if !developerOptionsVisible {
                         developerTapCount += 1
                         if developerTapCount >= 5 {
@@ -380,6 +383,7 @@ struct SettingsView: View {
                             developerTapCount = 0
                         }
                     }
+                    #endif
                 }
 
                 Button {
@@ -452,6 +456,7 @@ struct SettingsView: View {
                 }
             }
 
+            #if DEBUG
             Button {
                 repository.addDemoData()
             } label: {
@@ -463,6 +468,7 @@ struct SettingsView: View {
                         .foregroundColor(Theme.Colors.textPrimary)
                 }
             }
+            #endif
         } header: {
             Text("Инструменты разработчика")
         } footer: {

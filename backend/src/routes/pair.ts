@@ -5,6 +5,7 @@ import {
   ValidationError,
   NotFoundError,
   ConflictError,
+  AppError,
 } from '../utils/errors.js';
 import {
   CreatePairRequest,
@@ -13,6 +14,16 @@ import {
   JoinPairResponse,
 } from '../models/types.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
+import { snakeToCamel } from '../utils/key-transform.js';
+
+/** Format a date field as full ISO 8601 timestamp */
+function formatDateISO(value: any): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  const str = String(value);
+  if (str.length === 10) return str + 'T00:00:00.000Z';
+  return str;
+}
 
 const pairRoutes: FastifyPluginAsync = async (server) => {
   // POST /pair/create
@@ -100,7 +111,7 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
         );
 
         // Generate unique invite code
-        let inviteCode: string;
+        let inviteCode: string = '';
         let attempts = 0;
         const maxAttempts = 10;
 
@@ -118,14 +129,14 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
         }
 
         if (attempts === maxAttempts) {
-          throw new Error('Failed to generate unique invite code');
+          throw new AppError(500, 'Failed to generate unique invite code', 'INVITE_GENERATION_FAILED');
         }
 
         // Create invite
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
         await client.query(
           'INSERT INTO invites (code, pair_id, created_by, expires_at) VALUES ($1, $2, $3, $4)',
-          [inviteCode!, pairId, userId, expiresAt]
+          [inviteCode, pairId, userId, expiresAt]
         );
 
         await client.query('COMMIT');
@@ -140,11 +151,11 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
         return {
           pair_id: pairId,
           user_id: userId,
-          invite_code: inviteCode!,
+          invite_code: inviteCode,
           invite_expires_at: expiresAt.toISOString(),
           token,
-          server_version: serverVersion,
-        };
+          server_version: String(serverVersion),
+        } as any;
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;
@@ -212,6 +223,9 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
         }
 
         const pairId = invite.pair_id;
+
+        // Serialize joins for this pair to enforce member-limit checks safely.
+        await client.query('SELECT id FROM pairs WHERE id = $1 FOR UPDATE', [pairId]);
 
         // Check if pair is full (max 2 members)
         const memberCountResult = await client.query(
@@ -287,30 +301,30 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
 
         // Get all data for initial sync
         const categoriesResult = await client.query(
-          `SELECT id, name, icon, color, sort_order, updated_at, deleted_at, server_version
+          `SELECT id, name, icon, color, sort_order, updated_at, deleted_at
            FROM categories
-           WHERE pair_id = $1
-           ORDER BY server_version`,
+           WHERE pair_id = $1 AND deleted_at IS NULL
+           ORDER BY sort_order`,
           [pairId]
         );
 
         const itemsResult = await client.query(
           `SELECT id, category_id, name, packages_count, items_count, shelf_number,
                   freeze_date, expiration_date, notes, photo_url,
-                  updated_at, deleted_at, server_version
+                  updated_at, deleted_at
            FROM items
-           WHERE pair_id = $1
-           ORDER BY server_version`,
+           WHERE pair_id = $1 AND deleted_at IS NULL
+           ORDER BY name`,
           [pairId]
         );
 
         const historyResult = await client.query(
           `SELECT id, type, item_id, category_id, item_name,
                   packages_delta, items_delta, new_packages, new_items,
-                  timestamp, deleted_at, server_version
+                  timestamp, deleted_at
            FROM history_events
-           WHERE pair_id = $1
-           ORDER BY server_version
+           WHERE pair_id = $1 AND deleted_at IS NULL
+           ORDER BY timestamp DESC
            LIMIT 500`,
           [pairId]
         );
@@ -328,29 +342,40 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
           pair_id: pairId,
           user_id: userId,
           token,
-          server_version: serverVersion,
+          server_version: String(serverVersion),
           initial_data: {
-            categories: categoriesResult.rows.map((row) => ({
-              ...row,
-              freeze_date: row.freeze_date?.toISOString().split('T')[0],
-              expiration_date: row.expiration_date?.toISOString().split('T')[0],
-              updated_at: row.updated_at.toISOString(),
-              deleted_at: row.deleted_at?.toISOString(),
-            })),
-            items: itemsResult.rows.map((row) => ({
-              ...row,
-              freeze_date: row.freeze_date.toISOString().split('T')[0],
-              expiration_date: row.expiration_date.toISOString().split('T')[0],
-              updated_at: row.updated_at.toISOString(),
-              deleted_at: row.deleted_at?.toISOString(),
-            })),
-            history: historyResult.rows.map((row) => ({
-              ...row,
-              timestamp: row.timestamp.toISOString(),
-              deleted_at: row.deleted_at?.toISOString(),
-            })),
+            categories: categoriesResult.rows.map((row) => {
+              const obj: any = {
+                ...row,
+                updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+                deleted_at: row.deleted_at instanceof Date ? row.deleted_at.toISOString() : row.deleted_at,
+                item_count: 0,
+              };
+              return snakeToCamel(obj);
+            }),
+            items: itemsResult.rows.map((row) => {
+              const obj: any = {
+                ...row,
+                category_id: row.category_id || '', // iOS model has non-optional categoryId
+                freeze_date: formatDateISO(row.freeze_date),
+                expiration_date: formatDateISO(row.expiration_date),
+                updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+                deleted_at: row.deleted_at instanceof Date ? row.deleted_at.toISOString() : row.deleted_at,
+              };
+              return snakeToCamel(obj);
+            }),
+            history: historyResult.rows.map((row) => {
+              const ts = row.timestamp instanceof Date ? row.timestamp.toISOString() : row.timestamp;
+              const obj: any = {
+                ...row,
+                timestamp: ts,
+                updated_at: ts, // iOS HistoryEvent has non-optional updatedAt
+                deleted_at: row.deleted_at instanceof Date ? row.deleted_at.toISOString() : row.deleted_at,
+              };
+              return snakeToCamel(obj);
+            }),
           },
-        };
+        } as any;
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;

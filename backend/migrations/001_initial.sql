@@ -5,14 +5,14 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Users table (anonymous users identified by device_id)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id TEXT UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Pairs table (shared freezers)
-CREATE TABLE pairs (
+CREATE TABLE IF NOT EXISTS pairs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL DEFAULT 'Мой холодильник',
     server_version BIGINT NOT NULL DEFAULT 0,
@@ -21,7 +21,7 @@ CREATE TABLE pairs (
 );
 
 -- Pair members (max 2 users per pair)
-CREATE TABLE pair_members (
+CREATE TABLE IF NOT EXISTS pair_members (
     pair_id UUID NOT NULL REFERENCES pairs(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'member')),
@@ -30,7 +30,7 @@ CREATE TABLE pair_members (
 );
 
 -- Invite codes (6-character codes, valid for 24 hours)
-CREATE TABLE invites (
+CREATE TABLE IF NOT EXISTS invites (
     code TEXT PRIMARY KEY,
     pair_id UUID NOT NULL REFERENCES pairs(id) ON DELETE CASCADE,
     created_by UUID NOT NULL REFERENCES users(id),
@@ -41,7 +41,7 @@ CREATE TABLE invites (
 );
 
 -- Categories
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY,
     pair_id UUID NOT NULL REFERENCES pairs(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE categories (
 );
 
 -- Items (frozen food items)
-CREATE TABLE items (
+CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY,
     pair_id UUID NOT NULL REFERENCES pairs(id) ON DELETE CASCADE,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
@@ -77,7 +77,7 @@ CREATE TABLE items (
 );
 
 -- History events
-CREATE TABLE history_events (
+CREATE TABLE IF NOT EXISTS history_events (
     id UUID PRIMARY KEY,
     pair_id UUID NOT NULL REFERENCES pairs(id) ON DELETE CASCADE,
 
@@ -98,23 +98,23 @@ CREATE TABLE history_events (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_users_device_id ON users(device_id);
-CREATE INDEX idx_pair_members_user ON pair_members(user_id);
-CREATE INDEX idx_pair_members_pair ON pair_members(pair_id);
+CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id);
+CREATE INDEX IF NOT EXISTS idx_pair_members_user ON pair_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_pair_members_pair ON pair_members(pair_id);
 
-CREATE INDEX idx_invites_code ON invites(code) WHERE used_at IS NULL;
-CREATE INDEX idx_invites_pair ON invites(pair_id);
-CREATE INDEX idx_invites_expires ON invites(expires_at) WHERE used_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_invites_code ON invites(code) WHERE used_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_invites_pair ON invites(pair_id);
+CREATE INDEX IF NOT EXISTS idx_invites_expires ON invites(expires_at) WHERE used_at IS NULL;
 
-CREATE INDEX idx_categories_pair_version ON categories(pair_id, server_version) WHERE deleted_at IS NULL;
-CREATE INDEX idx_categories_pair ON categories(pair_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_categories_pair_version ON categories(pair_id, server_version) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_categories_pair ON categories(pair_id) WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_items_pair_version ON items(pair_id, server_version) WHERE deleted_at IS NULL;
-CREATE INDEX idx_items_pair ON items(pair_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_items_category ON items(category_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_items_pair_version ON items(pair_id, server_version) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_items_pair ON items(pair_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id) WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_history_pair_version ON history_events(pair_id, server_version);
-CREATE INDEX idx_history_pair ON history_events(pair_id);
+CREATE INDEX IF NOT EXISTS idx_history_pair_version ON history_events(pair_id, server_version);
+CREATE INDEX IF NOT EXISTS idx_history_pair ON history_events(pair_id);
 
 -- Function to auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -125,11 +125,19 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Trigger for pairs table
-CREATE TRIGGER update_pairs_updated_at
-    BEFORE UPDATE ON pairs
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+-- Trigger for pairs table (wrapped to avoid error on re-run)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger WHERE tgname = 'update_pairs_updated_at'
+    ) THEN
+        CREATE TRIGGER update_pairs_updated_at
+            BEFORE UPDATE ON pairs
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END;
+$$;
 
 -- Comments for documentation
 COMMENT ON TABLE users IS 'Anonymous users identified by device_id';

@@ -11,7 +11,7 @@ export interface CreatePairResponse {
   invite_code: string;
   invite_expires_at: string;
   token: string;
-  server_version: number;
+  server_version: string;
 }
 
 export interface JoinPairRequest {
@@ -23,7 +23,7 @@ export interface JoinPairResponse {
   pair_id: string;
   user_id: string;
   token: string;
-  server_version: number;
+  server_version: string;
   initial_data: {
     categories: Category[];
     items: Item[];
@@ -39,7 +39,6 @@ export interface Category {
   sort_order?: number;
   updated_at: string;
   deleted_at?: string;
-  server_version: number;
 }
 
 export interface Item {
@@ -55,14 +54,20 @@ export interface Item {
   photo_url?: string;
   updated_at: string;
   deleted_at?: string;
-  server_version: number;
 }
 
 export interface HistoryEvent {
   id: string;
-  type: 'itemAdded' | 'quantityChanged';
-  item_id: string;
-  category_id: string;
+  type:
+    | 'item_added'
+    | 'item_updated'
+    | 'item_deleted'
+    | 'packages_changed'
+    | 'items_changed'
+    | 'itemAdded'
+    | 'quantityChanged';
+  item_id?: string;
+  category_id?: string;
   item_name: string;
   packages_delta?: number;
   items_delta?: number;
@@ -70,7 +75,6 @@ export interface HistoryEvent {
   new_items?: number;
   timestamp: string;
   deleted_at?: string;
-  server_version: number;
 }
 
 export interface SyncRequest {
@@ -83,7 +87,7 @@ export interface SyncRequest {
 }
 
 export interface SyncResponse {
-  server_version: number;
+  server_version: string;
   applied_changes: number;
   server_changes: {
     categories: Category[];

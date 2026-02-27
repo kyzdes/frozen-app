@@ -1,7 +1,7 @@
 // In production, env vars are provided by Docker via env_file
 // For local development, load .env file
 import server from './server.js';
-import db from './config/database.js';
+import db, { testConnection } from './config/database.js';
 import logger from './utils/logger.js';
 
 // Import routes
@@ -14,8 +14,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 async function start() {
   try {
-    // Test database connection
-    await db.query('SELECT NOW()');
+    // Test database connection with retry
+    await testConnection();
     logger.info('Database connected successfully');
 
     // Register routes

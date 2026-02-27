@@ -335,6 +335,7 @@ class SyncService: ObservableObject {
             syncStatus.state = .error("Токен истек")
             stopPeriodicSync()
             keychain.clearAllData()
+            currentPair = nil
         case .networkError:
             syncStatus.state = .offline
         case .serverError(let message):

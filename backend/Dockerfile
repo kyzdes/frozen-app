@@ -16,6 +16,12 @@ RUN npm run build
 RUN rm -rf src node_modules && \
     npm ci --only=production
 
+# Make startup script executable
+RUN chmod +x startup.sh
+
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+CMD ["sh", "startup.sh"]

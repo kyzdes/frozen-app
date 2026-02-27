@@ -1,4 +1,5 @@
 import SwiftUI
+import Adapty
 
 @main
 struct FreezerApp: App {
@@ -7,6 +8,9 @@ struct FreezerApp: App {
     @AppStorage("appLanguage") private var appLanguage: String = "ru"
 
     init() {
+        // Активация Adapty SDK
+        Adapty.activate("public_live_ejSQuJcE.AklzG8jICYbYn9EqzVsA")
+
         AnalyticsService.shared.trackAppOpened()
         applyPreferredLanguage()
 

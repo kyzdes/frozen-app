@@ -82,13 +82,6 @@ struct CategoryListView: View {
                     .tint(Theme.Colors.primary)
                 }
             }
-            .background(
-                NavigationLink(
-                    destination: HistoryView(history: repository.history),
-                    isActive: $showingHistory
-                ) { EmptyView() }
-                    .hidden()
-            )
             .sheet(isPresented: $showingAddCategory) {
                 CategoryFormView(category: nil)
             }
@@ -103,6 +96,9 @@ struct CategoryListView: View {
                     .environmentObject(repository)
             }
             .preferredColorScheme(selectedColorScheme)
+            .navigationDestination(isPresented: $showingHistory) {
+                HistoryView(history: repository.history)
+            }
         }
     }
 

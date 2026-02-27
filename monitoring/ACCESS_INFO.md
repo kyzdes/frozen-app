@@ -7,7 +7,7 @@
 
 ### Учетные данные:
 - **Username:** `admin`
-- **Password:** `tZfNLJkVceds0LUuP9kp5Lwo`
+- **Password:** `*** REDACTED ***` (храните в секретах окружения)
 
 ---
 
@@ -19,7 +19,7 @@
 ```
 Тип: A
 Имя: monitor.moone.dev
-Значение: 89.22.237.148
+Значение: <monitoring-host-ip>
 TTL: 300
 ```
 
@@ -99,21 +99,21 @@ container_last_seen{name!=""}
 
 ### Остановить мониторинг:
 ```bash
-ssh root@89.22.237.148
+ssh root@<monitoring-host>
 cd /root/monitoring
 docker compose down
 ```
 
 ### Запустить мониторинг:
 ```bash
-ssh root@89.22.237.148
+ssh root@<monitoring-host>
 cd /root/monitoring
 docker compose up -d
 ```
 
 ### Посмотреть логи:
 ```bash
-ssh root@89.22.237.148
+ssh root@<monitoring-host>
 cd /root/monitoring
 docker compose logs -f grafana    # Логи Grafana
 docker compose logs -f prometheus # Логи Prometheus
@@ -122,7 +122,7 @@ docker compose logs -f loki       # Логи Loki
 
 ### Проверить статус:
 ```bash
-ssh root@89.22.237.148
+ssh root@<monitoring-host>
 cd /root/monitoring
 docker compose ps
 ```

@@ -33,9 +33,13 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://freezer:${DB_PASSWORD}@postgres:5432/freezer
       JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
       PORT: 3000
       HOST: 0.0.0.0
+      TRUST_PROXY: "true"
       LOG_LEVEL: info
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

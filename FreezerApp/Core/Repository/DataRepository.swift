@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import OSLog
 
+@MainActor
 class DataRepository: ObservableObject {
     @Published var categories: [Category] = []
     @Published var items: [Item] = []
@@ -20,8 +21,12 @@ class DataRepository: ObservableObject {
     private let cloudStore = NSUbiquitousKeyValueStore.default
     private var cancellables = Set<AnyCancellable>()
 
-    init(syncService: SyncService = .shared) {
-        self.syncService = syncService
+    init(syncService: SyncService? = nil) {
+        if let syncService = syncService {
+            self.syncService = syncService
+        } else {
+            self.syncService = SyncService.shared
+        }
         setupCloudSync()
         setupSyncHandlers()
         loadData()
@@ -100,13 +105,9 @@ class DataRepository: ObservableObject {
 
     @objc private func handleLeavePair(_ notification: Notification) {
         DispatchQueue.main.async { [weak self] in
-            // Clear all data when leaving pair
-            self?.categories = []
-            self?.items = []
-            self?.history = []
-            self?.saveCategories()
-            self?.saveItems()
-            self?.saveHistory()
+            // Keep local data after leaving shared pair (matches Settings UX copy).
+            self?.updateCategoryCounts()
+            self?.scheduleNotifications()
         }
     }
 
@@ -331,6 +332,7 @@ class DataRepository: ObservableObject {
                 items[itemIndex].deletedAt = Date()
                 items[itemIndex].updatedAt = Date()
             }
+            let deletedItems = items.filter { $0.categoryId == categoryId }
 
             saveCategories()
             saveItems()
@@ -344,6 +346,16 @@ class DataRepository: ObservableObject {
                 item: nil,
                 historyEvent: nil
             ))
+            for deletedItem in deletedItems {
+                syncService.queueChange(PendingChange(
+                    type: .itemDeleted,
+                    entityId: deletedItem.id,
+                    timestamp: Date(),
+                    category: nil,
+                    item: deletedItem,
+                    historyEvent: nil
+                ))
+            }
 
             // Remove from local display after a delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in

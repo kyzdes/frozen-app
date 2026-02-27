@@ -1,0 +1,25 @@
+PODS:
+  - Adapty (3.15.3):
+    - AdaptyLogger (= 3.15.3)
+    - AdaptyUIBuilder (= 3.15.3)
+  - AdaptyLogger (3.15.3)
+  - AdaptyUIBuilder (3.15.3):
+    - AdaptyLogger (= 3.15.3)
+
+DEPENDENCIES:
+  - Adapty (~> 3.15.3)
+
+SPEC REPOS:
+  trunk:
+    - Adapty
+    - AdaptyLogger
+    - AdaptyUIBuilder
+
+SPEC CHECKSUMS:
+  Adapty: 9d5c8378ddf71747e5182ae9dd3426b2a4dc274a
+  AdaptyLogger: 8a58745fe27ac991d2b2f05de57bfa9d932383ca
+  AdaptyUIBuilder: e94ea218d936f58f13123fda19f3c13fba5cdb7d
+
+PODFILE CHECKSUM: b38f2b30c9e3eec1ea653f001888b51f2f820607
+
+COCOAPODS: 1.16.2
