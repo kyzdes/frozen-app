@@ -15,7 +15,6 @@ struct ItemFormView: View {
     @State private var expirationDate: Date
     @State private var notes: String
     @State private var showDeleteConfirmation = false
-    @State private var showValidation = false
 
     init(item: Item?, categoryId: String) {
         self.item = item
@@ -26,19 +25,8 @@ struct ItemFormView: View {
         _itemsCount = State(initialValue: item?.itemsCount ?? 1)
         _shelfNumber = State(initialValue: item?.shelfNumber ?? 1)
         _freezeDate = State(initialValue: item?.freezeDate ?? Date())
-        _expirationDate = State(initialValue: item?.expirationDate ?? Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date())
+        _expirationDate = State(initialValue: item?.expirationDate ?? Calendar.current.date(byAdding: .year, value: 1, to: Date())!)
         _notes = State(initialValue: item?.notes ?? "")
-    }
-
-    private var nameError: String? {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "Введите название" }
-        if trimmed.count < 2 { return "Слишком короткое название" }
-        return nil
-    }
-
-    private var expirationError: String? {
-        expirationDate < freezeDate ? "Срок годности не может быть раньше даты заморозки" : nil
     }
 
     var body: some View {
@@ -52,14 +40,6 @@ struct ItemFormView: View {
                     Section("Название") {
                         TextField("Например: куриная грудка, клубника", text: $name)
                             .font(Theme.Typography.body)
-                            .overlay(alignment: .bottomLeading) {
-                                if showValidation, let nameError {
-                                    Text(nameError)
-                                        .font(Theme.Typography.caption)
-                                        .foregroundColor(Theme.Colors.error)
-                                        .padding(.top, Theme.Spacing.xs)
-                                }
-                            }
                     }
 
                     // Quantity
@@ -92,11 +72,6 @@ struct ItemFormView: View {
                             displayedComponents: .date
                         )
                         .font(Theme.Typography.body)
-                        if showValidation, let expirationError {
-                            Text(expirationError)
-                                .font(Theme.Typography.caption)
-                                .foregroundColor(Theme.Colors.error)
-                        }
                     }
 
                     // Notes
@@ -137,7 +112,7 @@ struct ItemFormView: View {
                     Button("Готово") {
                         saveItem()
                     }
-                    .disabled(nameError != nil || expirationError != nil)
+                    .disabled(name.isEmpty)
                 }
             }
             .alert("Удалить заготовку?", isPresented: $showDeleteConfirmation) {
@@ -152,15 +127,9 @@ struct ItemFormView: View {
     }
 
     private func saveItem() {
-        showValidation = true
-        guard nameError == nil, expirationError == nil else {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            return
-        }
-
         if let existing = item {
             var updated = existing
-            updated.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            updated.name = name
             updated.packagesCount = packagesCount
             updated.itemsCount = itemsCount
             updated.shelfNumber = shelfNumber
@@ -170,7 +139,7 @@ struct ItemFormView: View {
             repository.updateItem(updated)
         } else {
             let newItem = Item(
-                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                name: name,
                 packagesCount: packagesCount,
                 itemsCount: itemsCount,
                 shelfNumber: shelfNumber,
@@ -181,14 +150,12 @@ struct ItemFormView: View {
             )
             repository.addItem(newItem)
         }
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }
 
     private func deleteItem() {
         if let itemToDelete = item {
             repository.deleteItem(itemToDelete.id)
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
             dismiss()
         }
     }

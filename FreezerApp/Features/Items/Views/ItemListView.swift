@@ -46,12 +46,34 @@ struct ItemListView: View {
                     }
                     .padding(.horizontal, Theme.Spacing.lg)
 
+                    // Search Bar
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(Theme.Colors.textSecondary)
+
+                        TextField("Поиск по названию или заметкам", text: $searchQuery)
+                            .font(Theme.Typography.body)
+
+                        if !searchQuery.isEmpty {
+                            Button {
+                                searchQuery = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(Theme.Colors.textSecondary)
+                            }
+                        }
+                    }
+                    .padding(Theme.Spacing.md)
+                    .background(Theme.Colors.cardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+                    .padding(.horizontal, Theme.Spacing.lg)
+
                     // Shelf Filter
                     if uniqueShelves.count > 1 {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: Theme.Spacing.sm) {
                                 FilterChip(
-                                    title: LK("Все полки"),
+                                    title: "Все полки",
                                     isSelected: selectedShelf == nil
                                 ) {
                                     selectedShelf = nil
@@ -59,7 +81,7 @@ struct ItemListView: View {
 
                                 ForEach(uniqueShelves, id: \.self) { shelf in
                                     FilterChip(
-                                        title: LK(String(format: LKS("Полка %d"), shelf)),
+                                        title: "Полка \(shelf)",
                                         isSelected: selectedShelf == shelf
                                     ) {
                                         selectedShelf = shelf
@@ -87,20 +109,6 @@ struct ItemListView: View {
                                         repository.updateItemItemsCount(item.id, delta: delta)
                                     }
                                 )
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        repository.deleteItem(item.id)
-                                    } label: {
-                                        Label(LK("Удалить"), systemImage: "trash")
-                                    }
-
-                                    Button {
-                                        editingItem = item
-                                    } label: {
-                                        Label(LK("Редактировать"), systemImage: "pencil")
-                                    }
-                                    .tint(Theme.Colors.primary)
-                                }
                             }
                         }
                         .padding(.horizontal, Theme.Spacing.lg)
@@ -116,7 +124,6 @@ struct ItemListView: View {
                     Spacer()
                     Button {
                         showingAddItem = true
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 24, weight: .semibold))
@@ -138,7 +145,6 @@ struct ItemListView: View {
         .sheet(item: $editingItem) { item in
             ItemFormView(item: item, categoryId: category.id)
         }
-        .searchable(text: $searchQuery, placement: .navigationBarDrawer(displayMode: .automatic), prompt: LK("Поиск по названию или заметкам"))
     }
 
     private var emptyStateView: some View {
@@ -147,24 +153,13 @@ struct ItemListView: View {
                 .font(.system(size: 64))
                 .foregroundColor(Theme.Colors.textTertiary)
 
-            Text(items.isEmpty ? LK("Нет заготовок") : LK("Ничего не найдено"))
+            Text(items.isEmpty ? "Нет заготовок" : "Ничего не найдено")
                 .font(Theme.Typography.body)
                 .foregroundColor(Theme.Colors.textSecondary)
 
-            Text(items.isEmpty ? LK("Нажмите +, чтобы добавить первую заготовку") : LK("Попробуйте изменить запрос"))
+            Text(items.isEmpty ? "Нажмите +, чтобы добавить первую заготовку" : "Попробуйте изменить запрос")
                 .font(Theme.Typography.subheadline)
                 .foregroundColor(Theme.Colors.textTertiary)
-
-            Button {
-                showingAddItem = true
-            } label: {
-                Label(LK("Добавить заготовку"), systemImage: "plus.circle.fill")
-                    .font(Theme.Typography.callout)
-                    .padding(.horizontal, Theme.Spacing.lg)
-                    .padding(.vertical, Theme.Spacing.sm)
-                    .background(Theme.Colors.primary.opacity(0.12))
-                    .clipShape(Capsule())
-            }
         }
         .padding(.top, 64)
         .padding(.horizontal, Theme.Spacing.lg)
@@ -172,14 +167,14 @@ struct ItemListView: View {
 
     private var itemsWord: String {
         let count = items.count
-        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("заготовка", comment: "item singular") }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("заготовки", comment: "items few") }
-        return NSLocalizedString("заготовок", comment: "items many")
+        if count % 10 == 1 && count % 100 != 11 { return "заготовка" }
+        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "заготовки" }
+        return "заготовок"
     }
 }
 
 struct FilterChip: View {
-    let title: LocalizedStringKey
+    let title: String
     let isSelected: Bool
     let action: () -> Void
 

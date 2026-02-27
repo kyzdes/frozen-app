@@ -17,7 +17,6 @@ final class BackupService {
         let exportDate: Date
         let categories: [Category]
         let items: [Item]
-        let history: [HistoryEvent]
 
         var metadata: BackupMetadata {
             BackupMetadata(
@@ -26,29 +25,6 @@ final class BackupService {
                 categoriesCount: categories.count,
                 itemsCount: items.count
             )
-        }
-
-        init(
-            version: String,
-            exportDate: Date,
-            categories: [Category],
-            items: [Item],
-            history: [HistoryEvent]
-        ) {
-            self.version = version
-            self.exportDate = exportDate
-            self.categories = categories
-            self.items = items
-            self.history = history
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            version = try container.decode(String.self, forKey: .version)
-            exportDate = try container.decode(Date.self, forKey: .exportDate)
-            categories = try container.decode([Category].self, forKey: .categories)
-            items = try container.decode([Item].self, forKey: .items)
-            history = try container.decodeIfPresent([HistoryEvent].self, forKey: .history) ?? []
         }
     }
 
@@ -62,13 +38,12 @@ final class BackupService {
     // MARK: - Export
 
     /// Экспорт данных в JSON
-    func exportData(categories: [Category], items: [Item], history: [HistoryEvent]) throws -> Data {
+    func exportData(categories: [Category], items: [Item]) throws -> Data {
         let backup = BackupData(
             version: "1.0",
             exportDate: Date(),
             categories: categories,
-            items: items,
-            history: history
+            items: items
         )
 
         let encoder = JSONEncoder()
@@ -86,8 +61,8 @@ final class BackupService {
     }
 
     /// Создание временного файла для экспорта
-    func createExportFile(categories: [Category], items: [Item], history: [HistoryEvent]) throws -> URL {
-        let data = try exportData(categories: categories, items: items, history: history)
+    func createExportFile(categories: [Category], items: [Item]) throws -> URL {
+        let data = try exportData(categories: categories, items: items)
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HHmmss"
@@ -152,12 +127,6 @@ final class BackupService {
         let uniqueItemIds = Set(itemIds)
         if itemIds.count != uniqueItemIds.count {
             issues.append("Обнаружены дубликаты ID заготовок")
-        }
-
-        // Проверка истории
-        let historyItemIds = backup.history.map { $0.itemId }
-        if historyItemIds.contains(where: { $0?.isEmpty ?? true }) {
-            issues.append("Некорректные записи истории")
         }
 
         // Проверка связности данных (все items должны иметь существующий categoryId)

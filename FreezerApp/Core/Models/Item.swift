@@ -12,10 +12,6 @@ struct Item: Identifiable, Codable, Hashable {
     var photoUrl: String?
     var categoryId: String
 
-    // MARK: - Sync Fields
-    var updatedAt: Date
-    var deletedAt: Date?
-
     init(
         id: String = UUID().uuidString,
         name: String,
@@ -26,9 +22,7 @@ struct Item: Identifiable, Codable, Hashable {
         expirationDate: Date,
         notes: String? = nil,
         photoUrl: String? = nil,
-        categoryId: String,
-        updatedAt: Date = Date(),
-        deletedAt: Date? = nil
+        categoryId: String
     ) {
         self.id = id
         self.name = name
@@ -40,8 +34,6 @@ struct Item: Identifiable, Codable, Hashable {
         self.notes = notes
         self.photoUrl = photoUrl
         self.categoryId = categoryId
-        self.updatedAt = updatedAt
-        self.deletedAt = deletedAt
     }
 
     var daysUntilExpiration: Int {
