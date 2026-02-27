@@ -1,0 +1,21 @@
+apiVersion: 1
+
+datasources:
+  # Prometheus - метрики
+  - name: Prometheus
+    type: prometheus
+    uid: Prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  # Loki - логи
+  - name: Loki
+    type: loki
+    uid: Loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000

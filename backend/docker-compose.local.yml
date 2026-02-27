@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: freezer-db-local
+    environment:
+      POSTGRES_DB: freezer
+      POSTGRES_USER: freezer
+      POSTGRES_PASSWORD: localdev123
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U freezer"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    container_name: freezer-api-local
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://freezer:localdev123@postgres:5432/freezer
+      JWT_SECRET: local-dev-secret-key-minimum-32-characters-long
+      CORS_ORIGIN: "true"
+      PORT: 3000
+      HOST: 0.0.0.0
+      TRUST_PROXY: "false"
+      LOG_LEVEL: debug
+      METRICS_ENABLED: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data_local:

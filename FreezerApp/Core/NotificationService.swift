@@ -8,9 +8,10 @@ final class NotificationService: NSObject {
 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.freezerapp", category: "Notifications")
     private let center = UNUserNotificationCenter.current()
+    private let schedulingQueue = DispatchQueue(label: "com.freezerapp.notifications", qos: .userInitiated)
 
     // Настройки уведомлений из UserDefaults
-    @UserDefaultsBacked(key: "notificationsEnabled", defaultValue: true)
+    @UserDefaultsBacked(key: "notificationsEnabled", defaultValue: false)
     var isEnabled: Bool
 
     @UserDefaultsBacked(key: "notificationDays", defaultValue: [3, 7, 14])
@@ -59,17 +60,28 @@ final class NotificationService: NSObject {
             return
         }
 
-        // Удаляем все старые уведомления
-        center.removeAllPendingNotificationRequests()
+        // Используем serial queue для предотвращения race condition
+        await withCheckedContinuation { continuation in
+            schedulingQueue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume()
+                    return
+                }
 
-        // Создаем уведомления для каждой заготовки
-        for item in items {
-            for days in notificationDays {
-                scheduleNotification(for: item, daysBeforeExpiration: days)
+                // Удаляем все старые уведомления
+                self.center.removeAllPendingNotificationRequests()
+
+                // Создаем уведомления для каждой заготовки
+                for item in items {
+                    for days in self.notificationDays {
+                        self.scheduleNotification(for: item, daysBeforeExpiration: days)
+                    }
+                }
+
+                self.logger.info("Scheduled notifications for \(items.count) items")
+                continuation.resume()
             }
         }
-
-        logger.info("Scheduled notifications for \(items.count) items")
     }
 
     /// Планирование уведомления для конкретной заготовки
@@ -186,6 +198,11 @@ struct UserDefaultsBacked<T: Codable> {
 
     var wrappedValue: T {
         get {
+            // Handle primitive/property-list values first (e.g. AppStorage Bool).
+            if let objectValue = UserDefaults.standard.object(forKey: key) as? T {
+                return objectValue
+            }
+
             guard let data = UserDefaults.standard.data(forKey: key) else {
                 return defaultValue
             }
@@ -193,6 +210,20 @@ struct UserDefaultsBacked<T: Codable> {
             return value ?? defaultValue
         }
         set {
+            // Keep primitive Bool/Int/String storage compatible with AppStorage.
+            if let boolValue = newValue as? Bool {
+                UserDefaults.standard.set(boolValue, forKey: key)
+                return
+            }
+            if let intValue = newValue as? Int {
+                UserDefaults.standard.set(intValue, forKey: key)
+                return
+            }
+            if let stringValue = newValue as? String {
+                UserDefaults.standard.set(stringValue, forKey: key)
+                return
+            }
+
             let data = try? JSONEncoder().encode(newValue)
             UserDefaults.standard.set(data, forKey: key)
         }

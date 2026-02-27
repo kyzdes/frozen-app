@@ -1,0 +1,237 @@
+"Отмена" = "Cancel";
+"Готово" = "Done";
+"Ошибка" = "Error";
+"Внимание" = "Warning";
+"Удалить" = "Delete";
+"Редактировать" = "Edit";
+"Сохранить" = "Save";
+"Добавить" = "Add";
+"Заменить" = "Replace";
+"Продолжить" = "Continue";
+"Покинуть" = "Leave";
+"Настройки" = "Settings";
+"Поиск" = "Search";
+
+/* Appearance */
+"Системная" = "System";
+"Светлая" = "Light";
+"Темная" = "Dark";
+"Тема оформления" = "Appearance";
+"Оформление" = "Theme";
+"Выберите тему оформления приложения" = "Choose the app theme";
+"Язык" = "Language";
+"Русский" = "Russian";
+"Выберите язык и тему оформления приложения" = "Choose the app language and theme";
+
+/* Home / Categories */
+"Свернуть все" = "Collapse all";
+"Развернуть все" = "Expand all";
+"Нет категорий" = "No categories";
+"Нажмите +, чтобы создать первую категорию" = "Tap + to create your first category";
+"Добавить категорию" = "Add category";
+"Добавить +" = "Add +";
+"Открыть полный список" = "Open full list";
+"История" = "History";
+"История пуста" = "History is empty";
+"Сортировка" = "Sort";
+"Новые" = "Newest";
+"Старые" = "Oldest";
+"Фильтр по дате" = "Filter by date";
+"Сбросить" = "Reset";
+"Добавлено" = "Added";
+"Обновлено" = "Updated";
+"Удалено" = "Deleted";
+"Упаковки: %@%@%@" = "Packages: %@%@%@";
+"Упаковки изменены" = "Packages updated";
+"Штуки: %@%@%@" = "Pieces: %@%@%@";
+"Количество изменено" = "Quantity updated";
+"заготовка" = "item";
+"заготовки" = "items";
+"заготовок" = "items";
+"категории" = "categories";
+"категориях" = "categories";
+
+/* Items list */
+"Все полки" = "All shelves";
+"Полка %@" = "Shelf %@";
+"Нет заготовок" = "No items";
+"Ничего не найдено" = "Nothing found";
+"Нажмите +, чтобы добавить первую заготовку" = "Tap + to add your first item";
+"Попробуйте изменить запрос" = "Try adjusting your search";
+"Добавить заготовку" = "Add item";
+"Поиск по названию или заметкам" = "Search by name or notes";
+
+/* Item form */
+"Введите название" = "Enter a name";
+"Слишком короткое название" = "Name is too short";
+"Срок годности не может быть раньше даты заморозки" = "Expiration date cannot be before the freeze date";
+"Название" = "Name";
+"Например: куриная грудка, клубника" = "e.g. chicken breast, strawberries";
+"Количество" = "Quantity";
+"Упаковок: %d" = "Packages: %d";
+"Штук: %d" = "Pieces: %d";
+"Номер полки" = "Shelf number";
+"Полка %d" = "Shelf %d";
+"Даты" = "Dates";
+"Дата заморозки" = "Freeze date";
+"Срок годности" = "Expiration date";
+"Заметки (необязательно)" = "Notes (optional)";
+"Удалить заготовку" = "Delete item";
+"Новая заготовка" = "New item";
+"Удалить заготовку?" = "Delete item?";
+"Это действие нельзя отменить" = "This action cannot be undone";
+
+/* Category form */
+"НАЗВАНИЕ" = "NAME";
+"Название категории" = "Category name";
+"ИКОНКА" = "ICON";
+"Выберите из палитры или оставьте без эмодзи" = "Choose from the palette or leave empty";
+"ЦВЕТ" = "COLOR";
+"ПРЕДПРОСМОТР" = "PREVIEW";
+"Удалить категорию" = "Delete category";
+"Новая категория" = "New category";
+"Удалить категорию?" = "Delete category?";
+"Все заготовки в этой категории также будут удалены. Это действие нельзя отменить." = "All items in this category will also be deleted. This action cannot be undone.";
+
+/* Item row */
+"Просрочено" = "Expired";
+"Свежее" = "Fresh";
+"день" = "day";
+"дня" = "days";
+"дней" = "days";
+"уп." = "pkg";
+"шт." = "pcs";
+"Уп." = "Pkg";
+"Шт." = "Pcs";
+
+/* Notifications */
+"Скоро истекает срок" = "Expiring soon";
+"%@ истекает через %d %@" = "%@ expires in %d %@";
+
+/* Sync status and errors */
+"Синхронизировано %@" = "Synced %@ ago";
+"Не синхронизировано" = "Not synced";
+"Синхронизация..." = "Syncing...";
+"✓ Синхронизировано" = "Synced";
+"⊘ Офлайн" = "Offline";
+"✕ Ошибка: %@" = "Error: %@";
+"⚠ Несинхр.: %d" = "Unsynced: %d";
+"Общий холодильник" = "Shared freezer";
+"Токен истек" = "Token expired";
+"Ошибка синхронизации" = "Sync error";
+
+/* API and network errors */
+"Неверный адрес сервера" = "Invalid server address";
+"Пустой ответ сервера" = "Empty server response";
+"Не удалось обработать ответ сервера" = "Could not parse server response";
+"Неверный ответ сервера" = "Invalid server response";
+"Ошибка сервера (HTTP %d)" = "Server error (HTTP %d)";
+"Вы уже подключены к холодильнику. Сначала покиньте текущий." = "You are already connected to a freezer. Leave it first.";
+"Неверный код приглашения" = "Invalid invite code";
+"Срок действия кода истек" = "Invite code expired";
+"Код приглашения уже использован" = "Invite code already used";
+"В холодильнике уже два участника" = "The freezer already has two members";
+"Сессия истекла, попробуйте подключиться заново" = "Session expired, please reconnect";
+"Нет подключения к интернету" = "No internet connection";
+
+/* Settings */
+"Резервное копирование" = "Backup";
+"Экспортировать данные" = "Export data";
+"Импортировать данные" = "Import data";
+"Экспортируйте данные для сохранения резервной копии или переноса на другое устройство" = "Export data to keep a backup or move to another device";
+"Уведомления о сроках" = "Expiration reminders";
+"Уведомления" = "Notifications";
+"Получайте напоминания о заготовках, срок годности которых скоро истекает" = "Get reminders for items nearing expiration";
+"Напоминать за" = "Remind me";
+"Выберите, за сколько дней до истечения срока годности отправлять уведомление" = "Choose how many days before expiration to remind you";
+"Синхронизация с партнером" = "Sync with partner";
+"Статус синхронизации" = "Sync status";
+"Синхронизировать вручную" = "Sync now";
+"Покинуть холодильник" = "Leave freezer";
+"Создать общий холодильник" = "Create shared freezer";
+"Подключиться к холодильнику" = "Join freezer";
+"Ваши данные синхронизируются с партнером каждые 5 секунд" = "Your data syncs with your partner every 5 seconds";
+"Создайте общий холодильник или подключитесь к существующему для синхронизации данных с партнером" = "Create a shared freezer or join an existing one to sync with your partner";
+"Синхронизация iCloud" = "iCloud sync";
+"Включена" = "On";
+"Выключена" = "Off";
+"Локальная синхронизация" = "Local sync";
+"При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID" = "With iCloud sync on, your data is automatically synced across devices on the same Apple ID";
+"Категорий" = "Categories";
+"Заготовок" = "Items";
+"Статистика" = "Stats";
+"Версия" = "Version";
+"О приложении" = "About";
+"Написать в поддержку" = "Contact support";
+"Debug (только в режиме разработки)" = "Debug (dev builds only)";
+"Эти опции доступны только в debug-сборке" = "These options are available only in debug builds";
+"Очистить данные синхронизации" = "Clear sync data";
+"Показать debug info" = "Show debug info";
+"Скопировать debug info" = "Copy debug info";
+"Добавить демо данные" = "Add demo data";
+"Инструменты разработчика" = "Developer tools";
+"Чтобы скрыть, перезапустите приложение" = "Restart the app to hide these options";
+"Все данные синхронизации удалены. Перезапустите приложение." = "Sync data cleared. Restart the app.";
+"Не удалось экспортировать данные: %@" = "Could not export data: %@";
+"Не удалось импортировать данные: %@" = "Could not import data: %@";
+"Некорректные данные:\n%@" = "Invalid data:\n%@";
+"Не удалось сохранить файл: %@" = "Could not save file: %@";
+"Не удалось покинуть холодильник: %@" = "Could not leave the freezer: %@";
+"Будет импортировано %d категорий и %d заготовок. Текущие данные будут заменены." = "This will import %d categories and %d items. Current data will be replaced.";
+"Покинуть холодильник?" = "Leave the freezer?";
+"Вы будете отключены от общего холодильника. Локальные данные останутся на устройстве." = "You will be disconnected from the shared freezer. Local data will stay on the device.";
+"Разрешите уведомления в настройках iOS" = "Allow notifications in iOS Settings";
+"Не удалось запросить разрешение на уведомления" = "Could not request notification permission";
+
+/* Pairing: create */
+"Создать холодильник" = "Create freezer";
+"Синхронизируйте данные с партнером" = "Sync your data with a partner";
+"Название холодильника" = "Freezer name";
+"Например: Наш холодильник" = "e.g. Our freezer";
+"Это название увидит ваш партнер при подключении" = "Your partner will see this name when joining";
+"Создать холодильник" = "Create freezer";
+"Холодильник создан!" = "Freezer created!";
+"Поделитесь кодом с партнером" = "Share the code with your partner";
+"Код приглашения" = "Invite code";
+"Скопировать код" = "Copy code";
+"Скопировано!" = "Copied!";
+"Код действителен 24 часа. Отправьте его партнеру любым удобным способом" = "The code is valid for 24 hours. Send it to your partner any way you like";
+
+/* Pairing: join */
+"Подключиться" = "Join";
+"Введите код от партнера" = "Enter your partner's code";
+"Введите 6-значный код, полученный от партнера" = "Enter the 6-digit code from your partner";
+"Что произойдет?" = "What will happen?";
+"Ваши данные заменятся на данные общего холодильника" = "Your data will be replaced by the shared freezer";
+"Изменения синхронизируются между устройствами" = "Changes sync across devices";
+"Автоматическая синхронизация каждые 5 секунд" = "Automatic sync every 5 seconds";
+"Успешно подключено!" = "Connected successfully!";
+"Вы подключились к общему холодильнику" = "You joined the shared freezer";
+"Синхронизация активна" = "Sync is active";
+"Неверный код приглашения" = "Invalid invite code";
+"Ошибка сети. Проверьте подключение к интернету" = "Network error. Check your internet connection";
+"Не удалось подключиться" = "Could not connect";
+"Ваши локальные данные будут заменены на данные общего холодильника. Это действие нельзя отменить." = "Your local data will be replaced by the shared freezer. This action cannot be undone.";
+
+/* Backup validation */
+"Неподдерживаемая версия бэкапа: %@" = "Unsupported backup version: %@";
+"Обнаружены дубликаты ID категорий" = "Duplicate category IDs found";
+"Обнаружены дубликаты ID заготовок" = "Duplicate item IDs found";
+"Некорректные записи истории" = "Invalid history records";
+"Найдено %d заготовок без категории" = "%d items without a category found";
+
+/* Backup errors */
+"Нет доступа к файлу" = "No access to the file";
+"Некорректные данные в файле" = "Invalid data in the file";
+
+/* Sample data */
+"Овощи" = "Vegetables";
+"Мясо" = "Meat";
+"Ягоды" = "Berries";
+"Бульоны" = "Broths";
+"Куриный бульон" = "Chicken broth";
+"Говяжий бульон" = "Beef broth";
+"Малина" = "Raspberry";
+
+/* Branding */
+"ПРОДУКТОВНЕР" = "PRODUCTOWNER";
