@@ -156,9 +156,7 @@ final class NotificationService: NSObject {
     // MARK: - Helpers
 
     private func daysWord(_ count: Int) -> String {
-        if count % 10 == 1 && count % 100 != 11 { return "день" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
-        return "дней"
+        russianPlural(count, one: "день", few: "дня", many: "дней")
     }
 }
 

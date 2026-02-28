@@ -238,6 +238,33 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
+    private var pairActionButtons: some View {
+        Button {
+            showCreatePair = true
+        } label: {
+            HStack {
+                Image(systemName: "plus.circle")
+                    .foregroundColor(Theme.Colors.primary)
+                    .frame(width: 24)
+                Text("Создать общий холодильник")
+                    .foregroundColor(Theme.Colors.textPrimary)
+            }
+        }
+
+        Button {
+            showJoinPair = true
+        } label: {
+            HStack {
+                Image(systemName: "link")
+                    .foregroundColor(Theme.Colors.primary)
+                    .frame(width: 24)
+                Text("Подключиться к холодильнику")
+                    .foregroundColor(Theme.Colors.textPrimary)
+            }
+        }
+    }
+
+    @ViewBuilder
     private var syncSection: some View {
         Section {
             if syncService.currentPair != nil {
@@ -277,60 +304,16 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "xmark.circle")
                                 .foregroundColor(.red)
-                            .frame(width: 24)
+                                .frame(width: 24)
                             Text("Покинуть холодильник")
                                 .foregroundColor(.red)
                         }
                     }
                 } else {
-                    Button {
-                        showCreatePair = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus.circle")
-                                .foregroundColor(Theme.Colors.primary)
-                                .frame(width: 24)
-                            Text("Создать общий холодильник")
-                                .foregroundColor(Theme.Colors.textPrimary)
-                        }
-                    }
-
-                    Button {
-                        showJoinPair = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "link")
-                                .foregroundColor(Theme.Colors.primary)
-                                .frame(width: 24)
-                            Text("Подключиться к холодильнику")
-                                .foregroundColor(Theme.Colors.textPrimary)
-                        }
-                    }
+                    pairActionButtons
                 }
             } else {
-                Button {
-                    showCreatePair = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 24)
-                        Text("Создать общий холодильник")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                    }
-                }
-
-                Button {
-                    showJoinPair = true
-                } label: {
-                    HStack {
-                        Image(systemName: "link")
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 24)
-                        Text("Подключиться к холодильнику")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                    }
-                }
+                pairActionButtons
             }
         } header: {
             Text("Синхронизация с партнером")
@@ -477,10 +460,7 @@ struct SettingsView: View {
             }
 
             Button {
-                let deviceId = KeychainService.shared.deviceId
-                let pairId = KeychainService.shared.pairId ?? "nil"
-                let token = KeychainService.shared.authToken ?? "nil"
-                errorMessage = "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
+                errorMessage = debugInfoString
                 showError = true
             } label: {
                 HStack {
@@ -493,11 +473,7 @@ struct SettingsView: View {
             }
 
             Button {
-                let deviceId = KeychainService.shared.deviceId
-                let pairId = KeychainService.shared.pairId ?? "nil"
-                let token = KeychainService.shared.authToken ?? "nil"
-                let info = "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
-                UIPasteboard.general.string = info
+                UIPasteboard.general.string = debugInfoString
             } label: {
                 HStack {
                     Image(systemName: "doc.on.doc")
@@ -555,8 +531,7 @@ struct SettingsView: View {
         do {
             let data = try backupService.exportData(
                 categories: repository.categories,
-                items: repository.items,
-                history: repository.history
+                items: repository.items
             )
             print("✅ Export data created, size: \(data.count) bytes")
             exportDocument = BackupDocument(data: data)
@@ -599,13 +574,20 @@ struct SettingsView: View {
 
     private func importBackup(_ backup: BackupService.BackupData) {
         // Replace all data
-        repository.replaceAllData(categories: backup.categories, items: backup.items, history: backup.history)
+        repository.replaceAllData(categories: backup.categories, items: backup.items)
 
         pendingBackup = nil
         dismiss()
     }
 
     // MARK: - Helpers
+
+    private var debugInfoString: String {
+        let deviceId = KeychainService.shared.deviceId
+        let pairId = KeychainService.shared.pairId ?? "nil"
+        let token = KeychainService.shared.authToken ?? "nil"
+        return "DeviceID: \(deviceId)\nPairID: \(pairId)\nToken: \(String(token.prefix(20)))..."
+    }
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -652,9 +634,7 @@ struct SettingsView: View {
     }
 
     private func daysWord(_ count: Int) -> String {
-        if count % 10 == 1 && count % 100 != 11 { return "день" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
-        return "дней"
+        russianPlural(count, one: "день", few: "дня", many: "дней")
     }
 
     private func notificationToggleBinding(for days: Int) -> Binding<Bool> {

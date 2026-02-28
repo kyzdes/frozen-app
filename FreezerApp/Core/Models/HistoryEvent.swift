@@ -1,5 +1,10 @@
 import Foundation
 
+/// Entities that support soft deletion via `deletedAt`.
+protocol SoftDeletable {
+    var deletedAt: Date? { get }
+}
+
 enum HistoryEventType: String, Codable, Hashable {
     case itemAdded = "item_added"
     case itemUpdated = "item_updated"
@@ -8,7 +13,7 @@ enum HistoryEventType: String, Codable, Hashable {
     case itemsChanged = "items_changed"
 }
 
-struct HistoryEvent: Identifiable, Codable, Hashable {
+struct HistoryEvent: Identifiable, Codable, Hashable, SoftDeletable {
     let id: String
     var type: HistoryEventType
     var itemId: String?
@@ -23,7 +28,7 @@ struct HistoryEvent: Identifiable, Codable, Hashable {
     var deletedAt: Date?
 
     init(
-        id: String = UUID().uuidString,
+        id: String = UUID().uuidString.lowercased(),
         type: HistoryEventType,
         itemId: String? = nil,
         categoryId: String? = nil,

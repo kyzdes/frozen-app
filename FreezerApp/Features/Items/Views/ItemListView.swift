@@ -166,10 +166,7 @@ struct ItemListView: View {
     }
 
     private var itemsWord: String {
-        let count = items.count
-        if count % 10 == 1 && count % 100 != 11 { return "заготовка" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "заготовки" }
-        return "заготовок"
+        russianPlural(items.count, one: "заготовка", few: "заготовки", many: "заготовок")
     }
 }
 

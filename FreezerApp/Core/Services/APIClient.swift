@@ -12,7 +12,11 @@ enum APIError: Error {
 class APIClient {
     static let shared = APIClient()
 
+    #if DEBUG
+    private let baseURL = "http://localhost:3000"
+    #else
     private let baseURL = "https://apps.moone.dev"
+    #endif
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
     private let keychain = KeychainService.shared

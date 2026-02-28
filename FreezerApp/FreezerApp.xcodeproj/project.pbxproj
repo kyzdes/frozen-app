@@ -69,8 +69,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A4CB15E22EDB395100FF4558 /* FreezerApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FreezerApp;
 			sourceTree = "<group>";
 		};
@@ -494,6 +492,7 @@
 				DEVELOPMENT_TEAM = XDQ47DMXMK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FreezerApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -534,6 +533,7 @@
 				DEVELOPMENT_TEAM = XDQ47DMXMK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FreezerApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

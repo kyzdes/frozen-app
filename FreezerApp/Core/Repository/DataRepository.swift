@@ -111,36 +111,29 @@ class DataRepository: ObservableObject {
         }
     }
 
+    /// Merge server entities into a local array: delete, update, or insert.
+    /// Uses case-insensitive ID comparison because PostgreSQL lowercases UUIDs.
+    private func mergeEntities<T: Identifiable & SoftDeletable>(
+        _ serverEntities: [T],
+        into local: inout [T]
+    ) where T.ID == String {
+        for entity in serverEntities {
+            let serverId = entity.id.lowercased()
+            if entity.deletedAt != nil {
+                local.removeAll { $0.id.lowercased() == serverId }
+            } else if let index = local.firstIndex(where: { $0.id.lowercased() == serverId }) {
+                local[index] = entity
+            } else {
+                local.append(entity)
+            }
+        }
+    }
+
     private func applyServerChanges(_ syncData: APIClient.SyncData) {
-        // Apply categories
-        for serverCategory in syncData.categories {
-            if serverCategory.deletedAt != nil {
-                // Remove deleted
-                categories.removeAll { $0.id == serverCategory.id }
-            } else if let index = categories.firstIndex(where: { $0.id == serverCategory.id }) {
-                // Update existing
-                categories[index] = serverCategory
-            } else {
-                // Add new
-                categories.append(serverCategory)
-            }
-        }
+        mergeEntities(syncData.categories, into: &categories)
+        mergeEntities(syncData.items, into: &items)
 
-        // Apply items
-        for serverItem in syncData.items {
-            if serverItem.deletedAt != nil {
-                // Remove deleted
-                items.removeAll { $0.id == serverItem.id }
-            } else if let index = items.firstIndex(where: { $0.id == serverItem.id }) {
-                // Update existing
-                items[index] = serverItem
-            } else {
-                // Add new
-                items.append(serverItem)
-            }
-        }
-
-        // Apply history
+        // History is append-only
         for serverHistory in syncData.history {
             if serverHistory.deletedAt == nil,
                !history.contains(where: { $0.id == serverHistory.id }) {
@@ -155,114 +148,59 @@ class DataRepository: ObservableObject {
         scheduleNotifications()
     }
 
-    // MARK: - Load & Save
-    private func loadData() {
-        loadCategories()
-        loadItems()
-        loadHistory()
+    // MARK: - Generic Load & Save
 
+    private func load<T: Codable>(key: String) -> [T]? {
+        if isICloudSyncActive,
+           let data = cloudStore.data(forKey: key),
+           let decoded = try? JSONDecoder().decode([T].self, from: data) {
+            return decoded
+        }
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decoded = try? JSONDecoder().decode([T].self, from: data) {
+            return decoded
+        }
+        return nil
+    }
+
+    private func save<T: Codable>(_ items: [T], key: String, label: String) {
+        guard let encoded = try? JSONEncoder().encode(items) else {
+            logger.error("Failed to encode \(label)")
+            return
+        }
+        if isICloudSyncActive {
+            cloudStore.set(encoded, forKey: key)
+            cloudStore.synchronize()
+        }
+        UserDefaults.standard.set(encoded, forKey: key)
+        logger.info("Saved \(items.count) \(label)")
+    }
+
+    // MARK: - Load & Save
+
+    private func loadData() {
+        if let loaded: [Category] = load(key: categoriesKey) {
+            categories = loaded
+        }
+        if let loaded: [Item] = load(key: itemsKey) {
+            items = loaded
+        }
+        if let loaded: [HistoryEvent] = load(key: historyKey) {
+            history = loaded
+        }
         updateCategoryCounts()
     }
 
-    private func loadCategories() {
-        if isICloudSyncActive {
-            // Пробуем загрузить из iCloud
-            if let data = cloudStore.data(forKey: categoriesKey),
-               let decoded = try? JSONDecoder().decode([Category].self, from: data) {
-                categories = decoded
-                return
-            }
-        }
-
-        // Фолбэк на локальное хранилище (для миграции старых данных)
-        if let data = UserDefaults.standard.data(forKey: categoriesKey),
-           let decoded = try? JSONDecoder().decode([Category].self, from: data) {
-            categories = decoded
-            // Сохраняем в iCloud для миграции
-            saveCategories()
-            return
-        }
-    }
-
     private func saveCategories() {
-        guard let encoded = try? JSONEncoder().encode(categories) else {
-            logger.error("Failed to encode categories")
-            return
-        }
-        // Сохраняем в iCloud
-        if isICloudSyncActive {
-            cloudStore.set(encoded, forKey: categoriesKey)
-            // Запускаем синхронизацию
-            cloudStore.synchronize()
-        }
-        // Также сохраняем локально как резервную копию
-        UserDefaults.standard.set(encoded, forKey: categoriesKey)
-        logger.info("Saved \(self.categories.count) categories")
-    }
-
-    private func loadItems() {
-        if isICloudSyncActive {
-            // Пробуем загрузить из iCloud
-            if let data = cloudStore.data(forKey: itemsKey),
-               let decoded = try? JSONDecoder().decode([Item].self, from: data) {
-                items = decoded
-                return
-            }
-        }
-
-        // Фолбэк на локальное хранилище (для миграции старых данных)
-        if let data = UserDefaults.standard.data(forKey: itemsKey),
-           let decoded = try? JSONDecoder().decode([Item].self, from: data) {
-            items = decoded
-            // Сохраняем в iCloud для миграции
-            saveItems()
-            return
-        }
+        save(categories, key: categoriesKey, label: "categories")
     }
 
     private func saveItems() {
-        guard let encoded = try? JSONEncoder().encode(items) else {
-            logger.error("Failed to encode items")
-            return
-        }
-        // Сохраняем в iCloud
-        if isICloudSyncActive {
-            cloudStore.set(encoded, forKey: itemsKey)
-            // Запускаем синхронизацию
-            cloudStore.synchronize()
-        }
-        // Также сохраняем локально как резервную копию
-        UserDefaults.standard.set(encoded, forKey: itemsKey)
-        logger.info("Saved \(self.items.count) items")
-    }
-
-    private func loadHistory() {
-        if isICloudSyncActive {
-            if let data = cloudStore.data(forKey: historyKey),
-               let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
-                history = decoded
-                return
-            }
-        }
-
-        if let data = UserDefaults.standard.data(forKey: historyKey),
-           let decoded = try? JSONDecoder().decode([HistoryEvent].self, from: data) {
-            history = decoded
-            saveHistory()
-        }
+        save(items, key: itemsKey, label: "items")
     }
 
     private func saveHistory() {
-        guard let encoded = try? JSONEncoder().encode(history) else {
-            logger.error("Failed to encode history")
-            return
-        }
-        if isICloudSyncActive {
-            cloudStore.set(encoded, forKey: historyKey)
-            cloudStore.synchronize()
-        }
-        UserDefaults.standard.set(encoded, forKey: historyKey)
-        logger.info("Saved \(self.history.count) history events")
+        save(history, key: historyKey, label: "history events")
     }
 
     private func updateCategoryCounts() {
@@ -467,24 +405,42 @@ class DataRepository: ObservableObject {
         }
     }
 
-    func updateItemPackagesCount(_ itemId: String, delta: Int) {
+    enum CountField {
+        case packages
+        case items
+    }
+
+    func updateItemCount(_ itemId: String, field: CountField, delta: Int) {
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
-        let oldValue = items[index].packagesCount
-        items[index].packagesCount = max(0, items[index].packagesCount + delta)
+
+        let oldValue: Int
+        switch field {
+        case .packages:
+            oldValue = items[index].packagesCount
+            items[index].packagesCount = max(0, oldValue + delta)
+        case .items:
+            oldValue = items[index].itemsCount
+            items[index].itemsCount = max(0, oldValue + delta)
+        }
+
         items[index].updatedAt = Date()
-        let newValue = items[index].packagesCount
+        let actualDelta: Int
+        switch field {
+        case .packages: actualDelta = items[index].packagesCount - oldValue
+        case .items:    actualDelta = items[index].itemsCount - oldValue
+        }
         saveItems()
 
         let historyEvent = HistoryEvent(
-            type: .packagesChanged,
+            type: field == .packages ? .packagesChanged : .itemsChanged,
             itemId: items[index].id,
             categoryId: items[index].categoryId,
             itemName: items[index].name,
-            packagesDelta: newValue - oldValue
+            packagesDelta: field == .packages ? actualDelta : nil,
+            itemsDelta: field == .items ? actualDelta : nil
         )
         addHistoryEvent(historyEvent)
 
-        // Queue for sync
         syncService.queueChange(PendingChange(
             type: .itemUpdated,
             entityId: itemId,
@@ -495,32 +451,13 @@ class DataRepository: ObservableObject {
         ))
     }
 
+    // Convenience wrappers to preserve existing call sites
+    func updateItemPackagesCount(_ itemId: String, delta: Int) {
+        updateItemCount(itemId, field: .packages, delta: delta)
+    }
+
     func updateItemItemsCount(_ itemId: String, delta: Int) {
-        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
-        let oldValue = items[index].itemsCount
-        items[index].itemsCount = max(0, items[index].itemsCount + delta)
-        items[index].updatedAt = Date()
-        let newValue = items[index].itemsCount
-        saveItems()
-
-        let historyEvent = HistoryEvent(
-            type: .itemsChanged,
-            itemId: items[index].id,
-            categoryId: items[index].categoryId,
-            itemName: items[index].name,
-            itemsDelta: newValue - oldValue
-        )
-        addHistoryEvent(historyEvent)
-
-        // Queue for sync
-        syncService.queueChange(PendingChange(
-            type: .itemUpdated,
-            entityId: itemId,
-            timestamp: Date(),
-            category: nil,
-            item: items[index],
-            historyEvent: nil
-        ))
+        updateItemCount(itemId, field: .items, delta: delta)
     }
 
     func getItems(for categoryId: String) -> [Item] {

@@ -38,10 +38,7 @@ struct ItemRow: View {
     }
 
     private var daysWord: String {
-        let count = abs(item.daysUntilExpiration)
-        if count % 10 == 1 && count % 100 != 11 { return "день" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "дня" }
-        return "дней"
+        russianPlural(item.daysUntilExpiration, one: "день", few: "дня", many: "дней")
     }
 
     var body: some View {

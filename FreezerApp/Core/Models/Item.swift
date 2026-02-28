@@ -1,6 +1,6 @@
 import Foundation
 
-struct Item: Identifiable, Codable, Hashable {
+struct Item: Identifiable, Codable, Hashable, SoftDeletable {
     let id: String
     var name: String
     var packagesCount: Int
@@ -12,8 +12,12 @@ struct Item: Identifiable, Codable, Hashable {
     var photoUrl: String?
     var categoryId: String
 
+    // MARK: - Sync Fields
+    var updatedAt: Date
+    var deletedAt: Date?
+
     init(
-        id: String = UUID().uuidString,
+        id: String = UUID().uuidString.lowercased(),
         name: String,
         packagesCount: Int = 1,
         itemsCount: Int = 1,
@@ -22,7 +26,9 @@ struct Item: Identifiable, Codable, Hashable {
         expirationDate: Date,
         notes: String? = nil,
         photoUrl: String? = nil,
-        categoryId: String
+        categoryId: String,
+        updatedAt: Date = Date(),
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -34,6 +40,8 @@ struct Item: Identifiable, Codable, Hashable {
         self.notes = notes
         self.photoUrl = photoUrl
         self.categoryId = categoryId
+        self.updatedAt = updatedAt
+        self.deletedAt = deletedAt
     }
 
     var daysUntilExpiration: Int {

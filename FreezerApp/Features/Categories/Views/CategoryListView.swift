@@ -115,17 +115,11 @@ struct CategoryListView: View {
     }
 
     private var itemsWord: String {
-        let count = totalItems
-        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("заготовка", comment: "item singular") }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("заготовки", comment: "items few") }
-        return NSLocalizedString("заготовок", comment: "items many")
+        russianPlural(totalItems, one: LKS("заготовка"), few: LKS("заготовки"), many: LKS("заготовок"))
     }
 
     private var categoriesWord: String {
-        let count = repository.categories.count
-        if count % 10 == 1 && count % 100 != 11 { return NSLocalizedString("категории", comment: "categories plural") }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return NSLocalizedString("категориях", comment: "categories few") }
-        return NSLocalizedString("категориях", comment: "categories many")
+        russianPlural(repository.categories.count, one: LKS("категории"), few: LKS("категориях"), many: LKS("категориях"))
     }
 
     // MARK: - Search & Filter
@@ -188,7 +182,7 @@ struct CategoryListView: View {
                 .clipShape(Capsule())
                 .overlay(
                     Capsule()
-                        .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
+                        .stroke(Theme.Colors.textTertiary.opacity(0.6), lineWidth: 0.5)
                 )
     }
 
@@ -228,7 +222,7 @@ struct CategoryListView: View {
                     .clipShape(Capsule())
                     .overlay(
                         Capsule()
-                            .stroke(Theme.Colors.separator.opacity(0.6), lineWidth: 0.5)
+                            .stroke(Theme.Colors.textTertiary.opacity(0.6), lineWidth: 0.5)
                     )
                 }
             }
@@ -300,9 +294,7 @@ struct CategoryListView: View {
                             },
                             onUpdateItemsCount: { delta in
                                 repository.updateItemItemsCount(item.id, delta: delta)
-                            },
-                            showSummaryText: false,
-                            showActionButtons: false
+                            }
                         )
                     }
                 }
@@ -330,7 +322,6 @@ struct CategoryListView: View {
                 category: category,
                 isExpanded: isExpanded,
                 onEdit: { editingCategory = category },
-                onDelete: { repository.deleteCategory(category.id) },
                 onLongPress: {
                     let impact = UIImpactFeedbackGenerator(style: .medium)
                     impact.impactOccurred()

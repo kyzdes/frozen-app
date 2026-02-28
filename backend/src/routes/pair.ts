@@ -177,6 +177,90 @@ const pairRoutes: FastifyPluginAsync = async (server) => {
     }
   );
 
+  // POST /pair/invite
+  server.post<{ Reply: CreatePairResponse }>(
+    '/invite',
+    {
+      onRequest: [authenticateUser],
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 hour',
+        },
+      },
+    },
+    async (request) => {
+      const { userId, sessionId, activePairId } = (request as AuthenticatedRequest).user;
+      if (!activePairId) {
+        throw new ConflictError('No active pair selected');
+      }
+
+      const client = await db.connect();
+
+      try {
+        await client.query('BEGIN');
+
+        const membershipResult = await client.query(
+          'SELECT role FROM pair_members WHERE pair_id = $1 AND user_id = $2 LIMIT 1',
+          [activePairId, userId]
+        );
+
+        if (membershipResult.rows.length === 0) {
+          throw new ConflictError('You are not a member of this pair');
+        }
+
+        const memberCountResult = await client.query(
+          'SELECT COUNT(*) as count FROM pair_members WHERE pair_id = $1',
+          [activePairId]
+        );
+
+        if (parseInt(memberCountResult.rows[0].count, 10) >= 2) {
+          throw new ConflictError('Pair is full (maximum 2 members)');
+        }
+
+        const pairResult = await client.query(
+          'SELECT server_version, name FROM pairs WHERE id = $1',
+          [activePairId]
+        );
+
+        if (pairResult.rows.length === 0) {
+          throw new NotFoundError('Pair not found');
+        }
+
+        const invite = await createInvite(client, activePairId, userId);
+        const userResult = await client.query(
+          'SELECT active_pair_id, personal_pair_id FROM users WHERE id = $1',
+          [userId]
+        );
+
+        const user = userResult.rows[0] as any;
+        const accessToken = authService.issueAccessToken(userId, sessionId, activePairId);
+
+        await client.query('COMMIT');
+
+        return {
+          pair_id: activePairId,
+          user_id: userId,
+          invite_code: invite.inviteCode,
+          invite_expires_at: invite.expiresAt.toISOString(),
+          server_version: String(pairResult.rows[0].server_version),
+          access_token: accessToken,
+          token: accessToken,
+          pair_context: authService.buildPairContext({
+            active_pair_id: user.active_pair_id,
+            personal_pair_id: user.personal_pair_id,
+            active_pair_name: pairResult.rows[0].name,
+          }),
+        } as any;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    }
+  );
+
   // POST /pair/join
   server.post<{ Body: JoinPairRequest; Reply: JoinPairResponse }>(
     '/join',

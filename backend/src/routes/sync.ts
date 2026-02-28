@@ -152,37 +152,62 @@ const syncRoutes: FastifyPluginAsync = async (server) => {
 
 // Helper functions
 
-async function processCategory(
+interface EntityUpsertConfig {
+  table: string;
+  columns: string[];
+  updateColumns: string[];
+}
+
+const CATEGORY_CONFIG: EntityUpsertConfig = {
+  table: 'categories',
+  columns: ['id', 'pair_id', 'name', 'icon', 'color', 'sort_order', 'updated_at', 'deleted_at', 'server_version'],
+  updateColumns: ['name', 'icon', 'color', 'sort_order', 'updated_at', 'deleted_at', 'server_version'],
+};
+
+const ITEM_CONFIG: EntityUpsertConfig = {
+  table: 'items',
+  columns: [
+    'id', 'pair_id', 'category_id', 'name', 'packages_count', 'items_count',
+    'shelf_number', 'freeze_date', 'expiration_date', 'notes', 'photo_url',
+    'updated_at', 'deleted_at', 'server_version',
+  ],
+  updateColumns: [
+    'category_id', 'name', 'packages_count', 'items_count', 'shelf_number',
+    'freeze_date', 'expiration_date', 'notes', 'photo_url',
+    'updated_at', 'deleted_at', 'server_version',
+  ],
+};
+
+async function processEntity(
   client: PoolClient,
   pairId: string,
-  category: any
+  entity: any,
+  config: EntityUpsertConfig
 ): Promise<boolean> {
-  // Check if record exists on server
   const existingResult = await client.query(
-    'SELECT * FROM categories WHERE id = $1 AND pair_id = $2',
-    [category.id, pairId]
+    `SELECT * FROM ${config.table} WHERE id = $1 AND pair_id = $2`,
+    [entity.id, pairId]
   );
 
   const serverRecord = existingResult.rows.length > 0
     ? existingResult.rows[0]
     : null;
 
-  // Prevent cross-pair writes when a client reuses/guesses an existing UUID from another pair.
+  // Prevent cross-pair writes
   if (!serverRecord) {
     const idOwnerResult = await client.query(
-      'SELECT pair_id FROM categories WHERE id = $1 LIMIT 1',
-      [category.id]
+      `SELECT pair_id FROM ${config.table} WHERE id = $1 LIMIT 1`,
+      [entity.id]
     );
     if (idOwnerResult.rows.length > 0 && idOwnerResult.rows[0].pair_id !== pairId) {
       return false;
     }
   }
 
-  // Resolve conflict using Last-Write-Wins
   const { winner } = resolveConflict(
     {
-      updated_at: category.updated_at,
-      deleted_at: category.deleted_at,
+      updated_at: entity.updated_at,
+      deleted_at: entity.deleted_at,
     },
     serverRecord ? {
       updated_at: serverRecord.updated_at.toISOString(),
@@ -190,45 +215,42 @@ async function processCategory(
     } : null
   );
 
-  if (winner === 'client') {
-    // Increment pair version and use it for this record.
-    const versionResult = await client.query(
-      'UPDATE pairs SET server_version = server_version + 1 WHERE id = $1 RETURNING server_version',
-      [pairId]
-    );
-    const newServerVersion = versionResult.rows[0].server_version;
+  if (winner !== 'client') return false;
 
-    // Upsert category
-    await client.query(
-      `INSERT INTO categories
-       (id, pair_id, name, icon, color, sort_order, updated_at, deleted_at, server_version)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (id) DO UPDATE SET
-         name = EXCLUDED.name,
-         icon = EXCLUDED.icon,
-         color = EXCLUDED.color,
-         sort_order = EXCLUDED.sort_order,
-         updated_at = EXCLUDED.updated_at,
-         deleted_at = EXCLUDED.deleted_at,
-         server_version = EXCLUDED.server_version
-       WHERE categories.pair_id = EXCLUDED.pair_id`,
-      [
-        category.id,
-        pairId,
-        category.name,
-        category.icon,
-        category.color,
-        category.sort_order,
-        category.updated_at,
-        category.deleted_at,
-        newServerVersion,
-      ]
-    );
+  const versionResult = await client.query(
+    'UPDATE pairs SET server_version = server_version + 1 WHERE id = $1 RETURNING server_version',
+    [pairId]
+  );
+  const newServerVersion = versionResult.rows[0].server_version;
 
-    return true;
-  }
+  const placeholders = config.columns.map((_, i) => `$${i + 1}`).join(', ');
+  const updateSet = config.updateColumns
+    .map((col) => `${col} = EXCLUDED.${col}`)
+    .join(', ');
 
-  return false; // Server won, no changes applied
+  const values = config.columns.map((col) => {
+    if (col === 'pair_id') return pairId;
+    if (col === 'server_version') return newServerVersion;
+    return entity[col];
+  });
+
+  await client.query(
+    `INSERT INTO ${config.table} (${config.columns.join(', ')})
+     VALUES (${placeholders})
+     ON CONFLICT (id) DO UPDATE SET ${updateSet}
+     WHERE ${config.table}.pair_id = EXCLUDED.pair_id`,
+    values
+  );
+
+  return true;
+}
+
+async function processCategory(
+  client: PoolClient,
+  pairId: string,
+  category: any
+): Promise<boolean> {
+  return processEntity(client, pairId, category, CATEGORY_CONFIG);
 }
 
 async function processItem(
@@ -236,85 +258,7 @@ async function processItem(
   pairId: string,
   item: any
 ): Promise<boolean> {
-  const existingResult = await client.query(
-    'SELECT * FROM items WHERE id = $1 AND pair_id = $2',
-    [item.id, pairId]
-  );
-
-  const serverRecord = existingResult.rows.length > 0
-    ? existingResult.rows[0]
-    : null;
-
-  // Prevent cross-pair writes when a client reuses/guesses an existing UUID from another pair.
-  if (!serverRecord) {
-    const idOwnerResult = await client.query(
-      'SELECT pair_id FROM items WHERE id = $1 LIMIT 1',
-      [item.id]
-    );
-    if (idOwnerResult.rows.length > 0 && idOwnerResult.rows[0].pair_id !== pairId) {
-      return false;
-    }
-  }
-
-  const { winner } = resolveConflict(
-    {
-      updated_at: item.updated_at,
-      deleted_at: item.deleted_at,
-    },
-    serverRecord ? {
-      updated_at: serverRecord.updated_at.toISOString(),
-      deleted_at: serverRecord.deleted_at?.toISOString(),
-    } : null
-  );
-
-  if (winner === 'client') {
-    const versionResult = await client.query(
-      'UPDATE pairs SET server_version = server_version + 1 WHERE id = $1 RETURNING server_version',
-      [pairId]
-    );
-    const newServerVersion = versionResult.rows[0].server_version;
-
-    await client.query(
-      `INSERT INTO items
-       (id, pair_id, category_id, name, packages_count, items_count, shelf_number,
-        freeze_date, expiration_date, notes, photo_url, updated_at, deleted_at, server_version)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-       ON CONFLICT (id) DO UPDATE SET
-         category_id = EXCLUDED.category_id,
-         name = EXCLUDED.name,
-         packages_count = EXCLUDED.packages_count,
-         items_count = EXCLUDED.items_count,
-         shelf_number = EXCLUDED.shelf_number,
-         freeze_date = EXCLUDED.freeze_date,
-         expiration_date = EXCLUDED.expiration_date,
-         notes = EXCLUDED.notes,
-         photo_url = EXCLUDED.photo_url,
-         updated_at = EXCLUDED.updated_at,
-         deleted_at = EXCLUDED.deleted_at,
-         server_version = EXCLUDED.server_version
-       WHERE items.pair_id = EXCLUDED.pair_id`,
-      [
-        item.id,
-        pairId,
-        item.category_id,
-        item.name,
-        item.packages_count,
-        item.items_count,
-        item.shelf_number,
-        item.freeze_date,
-        item.expiration_date,
-        item.notes,
-        item.photo_url,
-        item.updated_at,
-        item.deleted_at,
-        newServerVersion,
-      ]
-    );
-
-    return true;
-  }
-
-  return false;
+  return processEntity(client, pairId, item, ITEM_CONFIG);
 }
 
 async function processHistoryEvent(

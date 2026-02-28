@@ -61,6 +61,9 @@ type ItemDraft = {
 
 type PairAction = 'create' | 'join';
 type AuthMode = 'login' | 'register';
+type ApplyAuthPayloadOptions = {
+  preserveLocalData?: boolean;
+};
 
 type CopyDictionary = {
   appName: string;
@@ -354,40 +357,66 @@ export default function App() {
 
   const t = COPY[state.settings.appLanguage];
 
-  const applyAuthPayload = useCallback((payload: Pick<AuthResponseDTO, 'user' | 'pair_context'>) => {
-    setState((prev) => ({
-      ...prev,
-      categories: [],
-      items: [],
-      history: [],
-      selectedCategoryId: undefined,
-      selectedItemId: undefined,
-      screen: 'home',
-      auth: {
-        isAuthenticated: true,
-        userId: payload.user.id,
-        userName: payload.user.name,
-        userEmail: payload.user.email,
-      },
-      sync: {
-        ...prev.sync,
-        pair: payload.pair_context.active_pair_id
+  const applyAuthPayload = useCallback(
+    (
+      payload: Pick<AuthResponseDTO, 'user' | 'pair_context'>,
+      options: ApplyAuthPayloadOptions = {}
+    ) => {
+      setState((prev) => {
+        const nextPairId = payload.pair_context.active_pair_id || null;
+        const prevPairId = prev.sync.pair?.pairId || null;
+        const sameUser = !prev.auth.userId || prev.auth.userId === payload.user.id;
+        const preserveLocalData = Boolean(
+          options.preserveLocalData && nextPairId && prevPairId === nextPairId && sameUser
+        );
+
+        const nextPendingChanges = preserveLocalData ? prev.sync.pendingChanges : [];
+        const nextLastKnownVersion = preserveLocalData ? prev.sync.lastKnownVersion : 0;
+        const nextSyncState = preserveLocalData ? prev.sync.status.state : 'idle';
+        const nextPair = nextPairId
           ? {
-              pairId: payload.pair_context.active_pair_id,
+              pairId: nextPairId,
               userId: payload.user.id,
               mode: payload.pair_context.mode,
-              serverVersion: 0,
+              serverVersion: preserveLocalData
+                ? prev.sync.pair?.serverVersion ?? prev.sync.lastKnownVersion
+                : 0,
+              inviteCode: preserveLocalData ? prev.sync.pair?.inviteCode : undefined,
+              inviteExpiresAt: preserveLocalData ? prev.sync.pair?.inviteExpiresAt : undefined,
             }
-          : null,
-        lastKnownVersion: 0,
-        pendingChanges: [],
-        status: {
-          state: 'idle',
-          pendingChangesCount: 0,
-        },
-      },
-    }));
-  }, []);
+          : null;
+
+        return {
+          ...prev,
+          categories: preserveLocalData ? prev.categories : [],
+          items: preserveLocalData ? prev.items : [],
+          history: preserveLocalData ? prev.history : [],
+          selectedCategoryId: undefined,
+          selectedItemId: undefined,
+          screen: 'home',
+          auth: {
+            isAuthenticated: true,
+            userId: payload.user.id,
+            userName: payload.user.name,
+            userEmail: payload.user.email,
+          },
+          sync: {
+            ...prev.sync,
+            pair: nextPair,
+            lastKnownVersion: nextLastKnownVersion,
+            pendingChanges: nextPendingChanges,
+            status: {
+              ...prev.sync.status,
+              state: nextSyncState,
+              pendingChangesCount: nextPendingChanges.length,
+              message: preserveLocalData ? prev.sync.status.message : undefined,
+            },
+          },
+        };
+      });
+    },
+    []
+  );
 
   const clearSessionState = useCallback(async () => {
     apiClient.clearTokens();
@@ -442,10 +471,13 @@ export default function App() {
           return;
         }
 
-        applyAuthPayload({
-          user: me.user,
-          pair_context: me.pair_context,
-        });
+        applyAuthPayload(
+          {
+            user: me.user,
+            pair_context: me.pair_context,
+          },
+          { preserveLocalData: true }
+        );
       } catch {
         if (cancelled) {
           return;
@@ -539,6 +571,27 @@ export default function App() {
         return matchesSearch && matchesShelf;
       });
   }, [selectedCategory, activeItems, categorySearchQuery, categoryShelfFilter]);
+
+  // Recovery for previously corrupted payload parsing where categoryId could be lost on sync.
+  // Force one full sync to rehydrate canonical server state.
+  useEffect(() => {
+    const hasOrphanItems = state.items.some((item) => !item.deletedAt && !item.categoryId);
+    if (!hasOrphanItems || !state.sync.pair || state.sync.lastKnownVersion === 0) {
+      return;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      sync: {
+        ...prev.sync,
+        lastKnownVersion: 0,
+        status: {
+          ...prev.sync.status,
+          state: 'idle',
+        },
+      },
+    }));
+  }, [state.items, state.sync.pair, state.sync.lastKnownVersion]);
 
   const syncNow = useCallback(async () => {
     const current = stateRef.current;
@@ -1348,6 +1401,40 @@ export default function App() {
     }
   }, []);
 
+  const generateInviteCode = useCallback(async () => {
+    if (!stateRef.current.sync.pair) {
+      return;
+    }
+
+    try {
+      const response = await apiClient.createInviteCode();
+      const serverVersion = Number.parseInt(response.server_version, 10) || 0;
+
+      setState((prev) => ({
+        ...prev,
+        sync: {
+          ...prev.sync,
+          pair: prev.sync.pair
+            ? {
+                ...prev.sync.pair,
+                inviteCode: response.invite_code,
+                inviteExpiresAt: response.invite_expires_at,
+                serverVersion: Math.max(prev.sync.pair.serverVersion || 0, serverVersion),
+              }
+            : prev.sync.pair,
+          lastKnownVersion: Math.max(prev.sync.lastKnownVersion, serverVersion),
+          status: {
+            ...prev.sync.status,
+            state: 'success',
+            message: undefined,
+          },
+        },
+      }));
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to get invite code');
+    }
+  }, []);
+
   const submitAuth = useCallback(async () => {
     if (!authEmail.trim() || !authPassword.trim()) {
       setErrorMessage(state.settings.appLanguage === 'ru' ? 'Введите email и пароль' : 'Enter email and password');
@@ -1938,6 +2025,11 @@ export default function App() {
                     <button className="settings-button" onClick={() => void syncNow()} disabled={syncingNow}>
                       <RefreshCw size={16} />
                       {t.manualSync}
+                    </button>
+
+                    <button className="settings-button" onClick={() => void generateInviteCode()}>
+                      <Link2 size={16} />
+                      {state.settings.appLanguage === 'ru' ? 'Получить код приглашения' : 'Get invite code'}
                     </button>
 
                     {state.sync.pair.mode === 'shared' ? (

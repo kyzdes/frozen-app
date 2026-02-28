@@ -60,15 +60,25 @@ export function categoryToDTO(category: Category): CategoryDTO {
 }
 
 export function categoryFromDTO(dto: CategoryDTO): Category {
+  const raw = dto as CategoryDTO & {
+    sortOrder?: number;
+    updatedAt?: string;
+    deletedAt?: string | null;
+  };
+
   return {
-    id: dto.id,
-    name: dto.name,
-    icon: dto.icon,
-    color: dto.color,
+    id: raw.id,
+    name: raw.name,
+    icon: raw.icon,
+    color: raw.color,
     itemCount: 0,
-    sortOrder: dto.sort_order,
-    updatedAt: asISO(dto.updated_at),
-    deletedAt: dto.deleted_at ? asISO(dto.deleted_at) : null,
+    sortOrder: raw.sort_order ?? raw.sortOrder,
+    updatedAt: asISO(raw.updated_at ?? raw.updatedAt ?? nowISO()),
+    deletedAt: raw.deleted_at
+      ? asISO(raw.deleted_at)
+      : raw.deletedAt
+        ? asISO(raw.deletedAt)
+        : null,
   };
 }
 
@@ -90,19 +100,35 @@ export function itemToDTO(item: Item): ItemDTO {
 }
 
 export function itemFromDTO(dto: ItemDTO): Item {
+  const raw = dto as ItemDTO & {
+    categoryId?: string;
+    packagesCount?: number;
+    itemsCount?: number;
+    shelfNumber?: number;
+    freezeDate?: string;
+    expirationDate?: string;
+    photoUrl?: string;
+    updatedAt?: string;
+    deletedAt?: string | null;
+  };
+
   return {
-    id: dto.id,
-    categoryId: dto.category_id || '',
-    name: dto.name,
-    packagesCount: dto.packages_count,
-    itemsCount: dto.items_count,
-    shelfNumber: dto.shelf_number,
-    freezeDate: asISO(dto.freeze_date),
-    expirationDate: asISO(dto.expiration_date),
-    notes: dto.notes,
-    photoUrl: dto.photo_url,
-    updatedAt: asISO(dto.updated_at),
-    deletedAt: dto.deleted_at ? asISO(dto.deleted_at) : null,
+    id: raw.id,
+    categoryId: raw.category_id ?? raw.categoryId ?? '',
+    name: raw.name,
+    packagesCount: raw.packages_count ?? raw.packagesCount ?? 0,
+    itemsCount: raw.items_count ?? raw.itemsCount ?? 0,
+    shelfNumber: raw.shelf_number ?? raw.shelfNumber ?? 1,
+    freezeDate: asISO(raw.freeze_date ?? raw.freezeDate ?? nowISO()),
+    expirationDate: asISO(raw.expiration_date ?? raw.expirationDate ?? nowISO()),
+    notes: raw.notes,
+    photoUrl: raw.photo_url ?? raw.photoUrl,
+    updatedAt: asISO(raw.updated_at ?? raw.updatedAt ?? nowISO()),
+    deletedAt: raw.deleted_at
+      ? asISO(raw.deleted_at)
+      : raw.deletedAt
+        ? asISO(raw.deletedAt)
+        : null,
   };
 }
 
@@ -122,17 +148,35 @@ export function historyToDTO(event: HistoryEvent): HistoryEventDTO {
 }
 
 export function historyFromDTO(dto: HistoryEventDTO): HistoryEvent {
+  const raw = dto as HistoryEventDTO & {
+    itemId?: string;
+    categoryId?: string;
+    itemName?: string;
+    packagesDelta?: number;
+    itemsDelta?: number;
+    updatedAt?: string;
+    deletedAt?: string | null;
+  };
+
   return {
-    id: dto.id,
-    type: dto.type,
-    itemId: dto.item_id,
-    categoryId: dto.category_id,
-    itemName: dto.item_name,
-    packagesDelta: dto.packages_delta,
-    itemsDelta: dto.items_delta,
-    timestamp: asISO(dto.timestamp),
-    updatedAt: dto.updated_at ? asISO(dto.updated_at) : asISO(dto.timestamp),
-    deletedAt: dto.deleted_at ? asISO(dto.deleted_at) : null,
+    id: raw.id,
+    type: raw.type,
+    itemId: raw.item_id ?? raw.itemId,
+    categoryId: raw.category_id ?? raw.categoryId,
+    itemName: raw.item_name ?? raw.itemName ?? '',
+    packagesDelta: raw.packages_delta ?? raw.packagesDelta,
+    itemsDelta: raw.items_delta ?? raw.itemsDelta,
+    timestamp: asISO(raw.timestamp),
+    updatedAt: raw.updated_at
+      ? asISO(raw.updated_at)
+      : raw.updatedAt
+        ? asISO(raw.updatedAt)
+        : asISO(raw.timestamp),
+    deletedAt: raw.deleted_at
+      ? asISO(raw.deleted_at)
+      : raw.deletedAt
+        ? asISO(raw.deletedAt)
+        : null,
   };
 }
 
@@ -153,10 +197,16 @@ export function syncDataFromDTO(data: SyncDataDTO): {
   items: Item[];
   history: HistoryEvent[];
 } {
+  const normalized = data as SyncDataDTO & {
+    categories?: CategoryDTO[];
+    items?: ItemDTO[];
+    history?: HistoryEventDTO[];
+  };
+
   return {
-    categories: data.categories.map(categoryFromDTO),
-    items: data.items.map(itemFromDTO),
-    history: data.history.map(historyFromDTO),
+    categories: (normalized.categories ?? []).map(categoryFromDTO),
+    items: (normalized.items ?? []).map(itemFromDTO),
+    history: (normalized.history ?? []).map(historyFromDTO),
   };
 }
 

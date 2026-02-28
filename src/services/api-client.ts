@@ -104,6 +104,19 @@ export class APIClient {
     return response;
   }
 
+  async createInviteCode(): Promise<CreatePairResponseDTO> {
+    const response = await this.request<CreatePairResponseDTO>(
+      '/pair/invite',
+      {
+        method: 'POST',
+      },
+      true
+    );
+
+    this.updateAccessToken(response.access_token || response.token);
+    return response;
+  }
+
   async joinPair(inviteCode: string, importMode: JoinImportMode): Promise<JoinPairResponseDTO> {
     const response = await this.request<JoinPairResponseDTO>(
       '/pair/join',
