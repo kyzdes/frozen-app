@@ -1,7 +1,7 @@
 # Repo Info (`repo-nfo.md`)
 
 Purpose: quick working map of this repository for future coding tasks.
-Last updated: 2026-02-27
+Last updated: 2026-02-28
 
 ## 1) Repository at a glance
 
@@ -20,8 +20,8 @@ Primary product direction appears to be iOS-first (see `prd.md`, version `0.7.6`
 - `FreezerApp/`: Xcode/SwiftUI app with local repo, sync service, notifications, backup/import.
 - `monitoring/`: Grafana + Prometheus + Loki + Promtail + cAdvisor + Node Exporter.
 - `prd.md`: product requirements and roadmap (most strategic context).
-- `README.md`: high-level readme, partially outdated (still references `/ios-app`).
-- `backend-context-codex.md`, `codex-context-reminder.md`: internal context notes.
+- `README.md`: high-level readme.
+- `CLAUDE.md`: Claude Code project context (primary reference for AI-assisted development).
 
 ## 3) Web app (`src/`)
 
@@ -129,10 +129,11 @@ Primary product direction appears to be iOS-first (see `prd.md`, version `0.7.6`
 - Keychain for device/token/pair/user IDs
 - optional backend sync (pair-based)
 - local notification scheduling
-- Adapty SDK activated at app startup
+- No third-party SDKs (Adapty was removed)
 
 ### App entry and architecture
 - `FreezerApp/App/FreezerApp.swift`
+  - auth gate (login/register flow via `AuthState`)
   - initializes `SyncService.shared`
   - initializes `DataRepository(syncService: .shared)`
   - sets language via `@AppStorage("appLanguage")`
@@ -192,16 +193,13 @@ Key files:
 
 ## 7) Notable mismatches and gotchas
 
-- Root README references `/ios-app`; actual iOS app path is `FreezerApp/`.
 - Web and iOS feature sets differ (iOS is richer: history, backup/import, pair sync settings).
 - `src/components/ui/*` contains many generic UI primitives that appear mostly unused by the active web app.
 - No dedicated automated tests were found for app/backend code.
 - Sync contracts rely on key-case conversions and timestamp correctness; these are easy break points.
-- Repository includes generated/vendor-heavy directories (e.g., `FreezerApp/Pods`, `backend/dist`, `backend/node_modules`) in current working tree context.
 
 ## 8) Sensitive or environment-specific data to treat carefully
 
-- `FreezerApp/App/FreezerApp.swift` contains an Adapty public key.
 - `monitoring/ACCESS_INFO.md` includes concrete infra host and Grafana credentials.
 - monitoring and API configs include real domains (`monitor.moone.dev`, `apps.moone.dev`).
 
@@ -211,7 +209,7 @@ Key files:
 2. If iOS task: open `FreezerApp/App/FreezerApp.swift`, then `DataRepository.swift`, then relevant `Features/*/Views`.
 3. If backend task: open `backend/src/server.ts`, route file, then migration SQL.
 4. If web task: open `src/App.tsx` + affected component.
-5. Validate docs against code before implementing; several docs are stale.
+5. Check `CLAUDE.md` for quick reference on all components.
 
 ## 10) Quick sanity checks
 
@@ -219,5 +217,6 @@ Key files:
 - Backend run: `cd backend && npm run dev`.
 - Backend health: `GET /health`.
 - Backend metrics: `GET /metrics`.
-- iOS run: open Xcode project and run on simulator/device.
+- iOS build: `xcodebuild build -project FreezerApp/FreezerApp.xcodeproj -scheme FreezerApp -destination 'generic/platform=iOS'`
+- iOS run: open `FreezerApp/FreezerApp.xcodeproj` in Xcode and run on simulator/device.
 
