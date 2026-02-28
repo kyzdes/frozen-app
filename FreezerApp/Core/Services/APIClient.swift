@@ -15,7 +15,7 @@ class APIClient {
     #if DEBUG
     private let baseURL = "http://localhost:3000"
     #else
-    private let baseURL = "https://apps.moone.dev"
+    private let baseURL = "https://api.freezer.moone.dev"
     #endif
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
