@@ -1,5 +1,5 @@
 import SwiftUI
-import Adapty
+import Combine
 
 @MainActor
 final class AuthState: ObservableObject {
@@ -215,8 +215,6 @@ struct FreezerApp: App {
     @AppStorage("appLanguage") private var appLanguage: String = "ru"
 
     init() {
-        Adapty.activate("public_live_ejSQuJcE.AklzG8jICYbYn9EqzVsA")
-
         AnalyticsService.shared.trackAppOpened()
         applyPreferredLanguage()
 
