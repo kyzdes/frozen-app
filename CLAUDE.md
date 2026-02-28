@@ -39,7 +39,7 @@ open FreezerApp/FreezerApp.xcodeproj    # Cmd+R in Xcode
 ### Key files
 - `Core/Repository/DataRepository.swift` — CRUD, soft deletes, sync queue
 - `Core/Services/SyncService.swift` — pair create/join/leave, periodic sync
-- `Core/Services/APIClient.swift` — base URL: `https://apps.moone.dev`
+- `Core/Services/APIClient.swift` — base URL: `https://api.freezer.moone.dev`
 - `Core/Services/KeychainService.swift` — tokens, pair/user IDs
 - `Core/NotificationService.swift` — expiration alerts
 - `Core/BackupService.swift` — JSON export/import
@@ -54,14 +54,28 @@ open FreezerApp/FreezerApp.xcodeproj    # Cmd+R in Xcode
 - **Auth:** JWT (register/login/logout + `/me` endpoint)
 - **Sync model:** pair-level monotonic `server_version`, last-write-wins conflicts, soft deletes
 - **Migrations:** `backend/migrations/` (tracked in `_migrations` table)
-- **Deploy:** Docker Compose + Nginx + TLS
-- **Env:** see `backend/.env.example` (`DATABASE_URL`, `JWT_SECRET`, `PORT`, `HOST`)
+- **Deploy:** Dokploy (Docker Swarm) on `77.90.43.8`, auto-deploy from `main`
+- **Production URL:** `https://api.freezer.moone.dev`
+- **Env:** see `backend/.env.example` (`DATABASE_URL`, `JWT_SECRET`, `PORT`, `HOST`, `CORS_ORIGIN`, `TRUST_PROXY`)
 
 ## Web app (`src/`)
 
 - **Entry:** `src/App.tsx` — screen routing, localStorage persistence
 - **Storage:** `freezer-categories`, `freezer-items` in localStorage
-- **Dev port:** 3000 (configured in `vite.config.ts`)
+- **Dev port:** 5174 (configured in `vite.config.ts`)
+- **Build output:** `build/` directory
+- **Deploy:** Dokploy (Nixpacks) on `77.90.43.8`, auto-deploy from `main`
+- **Production URL:** `https://freezer.moone.dev`
+- **Build-time env:** `VITE_API_BASE_URL=https://api.freezer.moone.dev`
+
+## Deployment
+
+- **Server:** `77.90.43.8` (Dokploy, Docker Swarm)
+- **Project:** `frozen-app` in Dokploy
+- **Database:** PostgreSQL 15-alpine (internal service `freezer-db`)
+- **DNS:** CloudFlare (DNS-only, no proxy) — required for Let's Encrypt HTTP challenge
+- **TLS:** Let's Encrypt via Traefik
+- **Auto-deploy:** both apps redeploy on push to `main`
 
 ## Conventions
 
