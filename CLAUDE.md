@@ -83,4 +83,4 @@ open FreezerApp/FreezerApp.xcodeproj    # Cmd+R in Xcode
 - Commit style: lowercase, descriptive (`feat:`, `fix:`, or plain description)
 - iOS min deployment: 18.1
 - No automated tests currently
-- `prd.md` has full product requirements and roadmap
+- `docs/prd.md` has full product requirements and roadmap

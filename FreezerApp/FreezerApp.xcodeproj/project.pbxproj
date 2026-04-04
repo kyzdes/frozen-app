@@ -33,6 +33,7 @@
 		A4CB160E2EDB399C00FF4558 /* FreezerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CB15EE2EDB399B00FF4558 /* FreezerApp.swift */; };
 		A4CB160F2EDB399C00FF4558 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CB15F12EDB399B00FF4558 /* Item.swift */; };
 		A4FF10B12F00AAAA00000002 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FF10B02F00AAAA00000001 /* FeatureFlags.swift */; };
+		A4FF10B32F00BBBB00000001 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FF10B22F00BBBB00000001 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +63,7 @@
 		A4CB16002EDB399B00FF4558 /* ItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRow.swift; sourceTree = "<group>"; };
 		A4CB16022EDB399B00FF4558 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A4FF10B02F00AAAA00000001 /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
+		A4FF10B22F00BBBB00000001 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A8E1D42958D6416C96845C75 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		B800D01AE69D4F08A6918E80 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -174,6 +176,7 @@
 			children = (
 				A4CB15F62EDB399B00FF4558 /* CategoryFormView.swift */,
 				A4CB15F72EDB399B00FF4558 /* CategoryListView.swift */,
+				A4FF10B22F00BBBB00000001 /* HistoryView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -323,6 +326,7 @@
 				A40F4D872EDE042E00416944 /* BackupService.swift in Sources */,
 				A40F4D8C2EDE050000416944 /* NotificationService.swift in Sources */,
 				A4CB160A2EDB399C00FF4558 /* CategoryListView.swift in Sources */,
+				A4FF10B32F00BBBB00000001 /* HistoryView.swift in Sources */,
 				A4BEE4C02EE9E2AE007604B4 /* AnalyticsService.swift in Sources */,
 				A4BEE4C12EE9E2AE007604B4 /* KeychainService.swift in Sources */,
 				A4BEE4C22EE9E2AE007604B4 /* SyncService.swift in Sources */,
