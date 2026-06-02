@@ -328,10 +328,10 @@ class APIClient {
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
-            categories = try c.decode([Category].self, forKey: .categories)
-            items = try c.decode([Item].self, forKey: .items)
-            // Decode history lossily: skip any malformed event or unknown future
-            // event type instead of failing the entire sync response.
+            // Decode lossily: skip any malformed category/item/event instead of
+            // failing the entire sync response. One bad row no longer aborts sync.
+            categories = try c.decode(LossyArray<Category>.self, forKey: .categories).elements
+            items = try c.decode(LossyArray<Item>.self, forKey: .items).elements
             history = try c.decode(LossyArray<HistoryEvent>.self, forKey: .history).elements
         }
 

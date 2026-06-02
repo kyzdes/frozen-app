@@ -201,7 +201,9 @@ class SyncService: ObservableObject {
                     items[item.id] = item
                 }
             case .historyAdded:
-                if let event = change.historyEvent {
+                // Never upload `.unknown` events: their raw value would violate the
+                // backend's history_events_type_check (5 canonical values, migration 005).
+                if let event = change.historyEvent, event.type != .unknown {
                     history[event.id] = event
                 }
             }
@@ -259,7 +261,15 @@ class SyncService: ObservableObject {
     }
 
     func handleAppWillResignActive() {
-        // Could reduce sync frequency here
+        // Best-effort final flush of queued local changes before the app is
+        // backgrounded/terminated. Local edits are already persisted by
+        // DataRepository, so this only accelerates propagation; it is not a
+        // correctness dependency.
+        if keychain.pairId != nil {
+            Task {
+                await performSync()
+            }
+        }
     }
 }
 

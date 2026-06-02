@@ -135,6 +135,7 @@ struct HistoryRow: View {
         case .itemUpdated: return "pencil"
         case .itemDeleted: return "trash"
         case .packagesChanged, .itemsChanged: return "arrow.up.arrow.down"
+        case .unknown: return "questionmark"
         }
     }
 
@@ -144,6 +145,7 @@ struct HistoryRow: View {
         case .itemUpdated: return AF.Color.accent
         case .itemDeleted: return AF.Color.expired
         case .packagesChanged, .itemsChanged: return AF.Color.soon
+        case .unknown: return AF.Color.textSecondary
         }
     }
 

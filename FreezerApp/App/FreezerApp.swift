@@ -292,6 +292,7 @@ struct FreezerApp: App {
     @StateObject private var repository = DataRepository(syncService: .shared)
     @StateObject private var authState = AuthState()
     @AppStorage("appLanguage") private var appLanguage: String = "ru"
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         AnalyticsService.shared.trackAppOpened()
@@ -344,6 +345,17 @@ struct FreezerApp: App {
             .onReceive(NotificationCenter.default.publisher(for: .didAuthExpired)) { _ in
                 Task {
                     await authState.logout(syncService: syncService, repository: repository)
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .active:
+                    syncService.handleAppDidBecomeActive()
+                case .background:
+                    // Guarantee a final flush of pending changes before suspension.
+                    syncService.handleAppWillResignActive()
+                default:
+                    break
                 }
             }
         }

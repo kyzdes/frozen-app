@@ -6,11 +6,28 @@ protocol SoftDeletable {
 }
 
 enum HistoryEventType: String, Codable, Hashable {
+    // Canonical snake_case raw values shared with backend/web (D-006). Do not change.
     case itemAdded = "item_added"
     case itemUpdated = "item_updated"
     case itemDeleted = "item_deleted"
     case packagesChanged = "packages_changed"
     case itemsChanged = "items_changed"
+    /// Fallback for any unrecognized/legacy raw value coming from a newer server.
+    /// Decodes here instead of throwing, so the event stays visible-but-benign
+    /// rather than being silently dropped by LossyArray.
+    case unknown
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        if let known = HistoryEventType(rawValue: raw) {
+            self = known
+        } else {
+            #if DEBUG
+            print("HistoryEventType: unrecognized raw value '\(raw)', decoding as .unknown")
+            #endif
+            self = .unknown
+        }
+    }
 }
 
 struct HistoryEvent: Identifiable, Codable, Hashable, SoftDeletable {
@@ -99,6 +116,8 @@ extension HistoryEvent {
             let delta = itemsDelta ?? 0
             let sign = delta > 0 ? "+" : ""
             return "\(itemName): \(sign)\(delta) штук"
+        case .unknown:
+            return itemName
         }
     }
 }
