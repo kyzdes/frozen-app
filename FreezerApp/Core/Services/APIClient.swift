@@ -23,11 +23,41 @@ class APIClient {
     private var refreshTask: Task<Void, Error>?
 
     private init() {
-        decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder = APIClient.makeJSONDecoder()
+        encoder = APIClient.makeJSONEncoder()
+    }
 
-        encoder = JSONEncoder()
+    /// JSONDecoder that matches the wire contract. The backend serializes every
+    /// timestamp via JS `Date.toISOString()`, which always emits fractional
+    /// seconds (e.g. "2026-01-01T00:00:00.000Z"). Foundation's plain `.iso8601`
+    /// strategy (ISO8601DateFormatter with only `.withInternetDateTime`) REJECTS
+    /// fractional seconds, so under it every dated entity failed to decode
+    /// on-device — and with LossyArray it would now be skipped silently. This
+    /// custom strategy accepts ISO-8601 both with and without fractional seconds.
+    static func makeJSONDecoder() -> JSONDecoder {
+        let withFractional = ISO8601DateFormatter()
+        withFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { d in
+            let raw = try d.singleValueContainer().decode(String.self)
+            if let date = withFractional.date(from: raw) ?? plain.date(from: raw) {
+                return date
+            }
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: d.codingPath,
+                      debugDescription: "Invalid ISO-8601 date: \(raw)")
+            )
+        }
+        return decoder
+    }
+
+    static func makeJSONEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
+        return encoder
     }
 
     // MARK: - Auth
