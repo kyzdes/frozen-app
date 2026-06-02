@@ -22,6 +22,7 @@ backend/.env
 *.xcuserstate
 *.xcuserdatad/
 xcuserdata/
+**/xcuserdata/
 *.pbxproj.backup
 
 # IDE
@@ -51,3 +52,10 @@ logs/security/
 
 # Local Xcode simulator build output
 build-sim/
+
+# managed by context-map skill — do not edit between markers
+# context-map-<slug>/ folders are project memory for AI coding agents.
+# They are not source code and may contain private operational notes, decisions,
+# and known issues that must not be pushed to public hosting.
+context-map-*/
+# end context-map skill section
