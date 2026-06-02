@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Plus } from 'lucide-react';
 import type { AuthResponseDTO, JoinImportMode, SyncDataDTO } from './domain/contracts';
 import {
   dateInputToISO,
@@ -10,7 +9,8 @@ import {
 } from './domain/mappers';
 import type { AppState, Category, Item } from './domain/models';
 import { COPY } from './lib/copy';
-import { buildHistoryEvent, createPendingChange } from './lib/helpers';
+import { buildHistoryEvent, createPendingChange, getExpirationState, syncStatusLabel } from './lib/helpers';
+import { Icon } from './lib/icons';
 import type { CategoryDraft, ItemDraft, PairAction, AuthMode } from './lib/types';
 import { trackEvent } from './services/analytics';
 import { apiClient, UnauthorizedError } from './services/api-client';
@@ -26,6 +26,7 @@ import { HistoryScreen } from './screens/HistoryScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { CategoryModalSheet } from './screens/CategoryModalSheet';
 import { PairModalSheet } from './screens/PairModalSheet';
+import { Aurora, BottomNav, MobileBar, Sidebar, type NavId } from './screens/Chrome';
 
 type ApplyAuthPayloadOptions = { preserveLocalData?: boolean };
 
@@ -54,7 +55,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [syncingNow, setSyncingNow] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const stateRef = useRef(state);
   const syncInFlightRef = useRef(false);
 
@@ -99,6 +100,14 @@ export default function App() {
         return matchesSearch && matchesShelf;
       });
   }, [selectedCategory, activeItems, categorySearchQuery, categoryShelfFilter]);
+
+  const expiringItems = useMemo(
+    () =>
+      activeItems
+        .filter((item) => getExpirationState(item).daysLeft <= 7)
+        .sort((a, b) => getExpirationState(a).daysLeft - getExpirationState(b).daysLeft),
+    [activeItems]
+  );
 
   // ── Auth helpers ────────────────────────────────────────────
   const applyAuthPayload = useCallback(
@@ -173,9 +182,16 @@ export default function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    if (state.settings.appearanceMode === 'light') root.classList.add('light');
-    if (state.settings.appearanceMode === 'dark') root.classList.add('dark');
+    const mode = state.settings.appearanceMode;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const dark = mode === 'dark' || (mode === 'system' && mq.matches);
+      root.classList.toggle('dark', dark);
+      root.classList.toggle('light', !dark);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
   }, [state.settings.appearanceMode]);
 
   useEffect(() => {
@@ -364,6 +380,13 @@ export default function App() {
     setState((prev) => ({ ...prev, selectedCategoryId: categoryId, selectedItemId: undefined, screen: 'category' }));
   }, []);
 
+  const navTo = useCallback((id: NavId) => {
+    if (id === 'home') { goHome(); return; }
+    setHomeSearchQuery('');
+    setHomeShelfFilter(null);
+    setState((prev) => ({ ...prev, screen: id, selectedItemId: undefined }));
+  }, [goHome]);
+
   // ── Settings actions ────────────────────────────────────────
   const requestNotificationAccess = useCallback(async () => {
     const permission = await notificationService.requestPermission();
@@ -408,7 +431,7 @@ export default function App() {
         const r = await apiClient.createPair(pairNameInput.trim());
         const sv = Number.parseInt(r.server_version, 10) || 0;
         setState((prev) => ({ ...prev, sync: { ...prev.sync, pair: { pairId: r.pair_id, userId: r.user_id, mode: r.pair_context.mode, inviteCode: r.invite_code, inviteExpiresAt: r.invite_expires_at, serverVersion: sv }, lastKnownVersion: sv, status: { ...prev.sync.status, state: 'success', message: undefined } } }));
-        await trackEvent('pair_created', state.deviceId, { pairId: r.pair_id, userId: r.user_id, mode: r.pair_context.mode, serverVersion: sv, inviteCode: r.invite_code, inviteExpiresAt: r.invite_expires_at });
+        await trackEvent('pair_created', state.deviceId, state.sync.pair, { pairId: r.pair_id, userId: r.user_id, mode: r.pair_context.mode, serverVersion: String(sv), inviteCode: r.invite_code, inviteExpiresAt: r.invite_expires_at });
       }
       if (pairAction === 'join') {
         if (!pairInput.trim()) { setErrorMessage(lang === 'ru' ? 'Введите код приглашения' : 'Enter invite code'); return; }
@@ -416,7 +439,7 @@ export default function App() {
         const sv = Number.parseInt(r.server_version, 10) || 0;
         const synced = syncDataFromDTO(r.initial_data);
         setState((prev) => ({ ...prev, categories: withCategoryCounts(synced.categories, synced.items), items: synced.items, history: synced.history, sync: { ...prev.sync, pair: { pairId: r.pair_id, userId: r.user_id, mode: r.pair_context.mode, serverVersion: sv }, lastKnownVersion: sv, pendingChanges: [], status: { state: 'success', pendingChangesCount: 0, message: undefined } } }));
-        await trackEvent('pair_joined', state.deviceId, { pairId: r.pair_id, userId: r.user_id, mode: r.pair_context.mode, serverVersion: sv, importMode: joinImportMode });
+        await trackEvent('pair_joined', state.deviceId, state.sync.pair, { pairId: r.pair_id, userId: r.user_id, mode: r.pair_context.mode, serverVersion: String(sv), importMode: joinImportMode });
       }
       setPairAction(null); setPairInput(''); setPairNameInput(''); setErrorMessage(null);
     } catch (error) { setErrorMessage(error instanceof Error ? error.message : 'Pair action failed'); }
@@ -463,10 +486,14 @@ export default function App() {
   // ── Render ──────────────────────────────────────────────────
   if (authBootstrapping) {
     return (
-      <div className="app-root auth-gate">
-        <div className="auth-card">
-          <h1>FreezerApp</h1>
-          <p>{lang === 'ru' ? 'Проверяем сессию…' : 'Restoring session…'}</p>
+      <div className="w-bootstrap">
+        <Aurora />
+        <div className="w-auth-card">
+          <div className="w-auth-brand">
+            <div className="w-auth-mark">❄️</div>
+            <h1>Морозилка</h1>
+            <p>{lang === 'ru' ? 'Проверяем сессию…' : 'Restoring session…'}</p>
+          </div>
         </div>
       </div>
     );
@@ -474,26 +501,54 @@ export default function App() {
 
   if (!state.auth.isAuthenticated) {
     return (
-      <AuthScreen
-        lang={lang} mode={authMode} name={authName} email={authEmail} password={authPassword}
-        loading={authLoading} error={errorMessage}
-        onModeChange={setAuthMode} onNameChange={setAuthName} onEmailChange={setAuthEmail}
-        onPasswordChange={setAuthPassword} onSubmit={() => void submitAuth()}
-      />
+      <>
+        <Aurora />
+        <AuthScreen
+          lang={lang} mode={authMode} name={authName} email={authEmail} password={authPassword}
+          loading={authLoading} error={errorMessage}
+          onModeChange={setAuthMode} onNameChange={setAuthName} onEmailChange={setAuthEmail}
+          onPasswordChange={setAuthPassword} onSubmit={() => void submitAuth()}
+        />
+      </>
     );
   }
 
+  const navActive: NavId = state.screen === 'history' ? 'history' : state.screen === 'settings' ? 'settings' : 'home';
+  const paired = Boolean(state.sync.pair);
+  const synced = state.sync.status.state === 'success';
+  const pairTitle = state.auth.userName || (lang === 'ru' ? 'Морозилка' : 'Freezer');
+  const pairSubtitle = paired ? syncStatusLabel(state.sync.status.state, lang) : lang === 'ru' ? 'Личная морозилка' : 'Personal freezer';
+  const mobileStatus = paired
+    ? synced ? (lang === 'ru' ? 'Синхр.' : 'Synced') : syncStatusLabel(state.sync.status.state, lang)
+    : lang === 'ru' ? 'Личная' : 'Personal';
+  const avatar = (state.auth.userName?.trim()?.charAt(0) || '❄').toUpperCase();
+
   return (
-    <div className="app-root">
-      <div className="app-shell">
+    <div className="w-app">
+      <Aurora />
+      <Sidebar
+        lang={lang} active={navActive} expiringCount={expiringItems.length}
+        onNavigate={navTo} onLogout={() => void logout()}
+        pairTitle={pairTitle} pairSubtitle={pairSubtitle} pairSynced={synced} avatar={avatar}
+      />
+
+      <main className="w-main">
+        <MobileBar statusLabel={mobileStatus} synced={synced} />
+
         {state.screen === 'home' && (
           <HomeScreen
             state={state} t={t} lang={lang}
             categories={activeCategories} filteredCategories={homeFilteredCategories}
-            filteredItems={homeFilteredItems} allShelves={allShelves} totalItems={activeItems.length}
+            filteredItems={homeFilteredItems} items={activeItems} expiringItems={expiringItems}
+            allShelves={allShelves} totalItems={activeItems.length}
             expandedCategories={expandedCategories} searchQuery={homeSearchQuery} shelfFilter={homeShelfFilter}
-            onSearchChange={setHomeSearchQuery} onShelfFilterChange={setHomeShelfFilter}
-            onToggleExpand={(id) => setExpandedCategories((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })}
+            onSearchChange={setHomeSearchQuery}
+            onShelfFilterChange={(shelf) => {
+              setHomeShelfFilter(shelf);
+              if (shelf === null) void trackEvent('filter_cleared', state.deviceId, state.sync.pair);
+              else void trackEvent('shelf_filter_applied', state.deviceId, state.sync.pair, { shelf: String(shelf) });
+            }}
+            onToggleExpand={(id) => setExpandedCategories((prev) => { const next = new Set(prev); if (next.has(id)) { next.delete(id); void trackEvent('category_collapsed', state.deviceId, state.sync.pair, { categoryId: id }); } else { next.add(id); void trackEvent('category_expanded', state.deviceId, state.sync.pair, { categoryId: id }); } return next; })}
             onToggleExpandAll={() => setExpandedCategories((prev) => prev.size === activeCategories.length ? new Set() : new Set(activeCategories.map((c) => c.id)))}
             onOpenCategory={openCategory} onEditCategory={openCategoryModal} onDeleteCategory={deleteCategory}
             onAddCategory={() => openCategoryModal()} onDragStart={setDraggedCategoryId} onDrop={reorderCategories}
@@ -501,7 +556,7 @@ export default function App() {
           />
         )}
 
-        {state.screen === 'category' && selectedCategory && (
+        {(state.screen === 'category' || state.screen === 'item-form') && selectedCategory && (
           <CategoryScreen
             state={state} t={t} lang={lang}
             category={selectedCategory} items={categoryItems} allShelves={allShelves}
@@ -510,14 +565,6 @@ export default function App() {
             onShelfFilterChange={setCategoryShelfFilter}
             onBack={goHome} onAddItem={() => openItemForm()} onEditItem={openItemForm}
             onDeleteItem={deleteItem} onUpdateCount={updateItemCount}
-          />
-        )}
-
-        {state.screen === 'item-form' && itemDraft && (
-          <ItemFormScreen
-            state={state} t={t} lang={lang} draft={itemDraft}
-            onDraftChange={setItemDraft} onSave={saveItem}
-            onCancel={() => setState((prev) => ({ ...prev, screen: 'category', selectedItemId: undefined }))}
           />
         )}
 
@@ -535,11 +582,17 @@ export default function App() {
             onBack={() => setState((prev) => ({ ...prev, screen: 'home' }))} onUpdateSettings={setState}
           />
         )}
-      </div>
+      </main>
 
-      <button className="fab" onClick={() => openCategoryModal()}>
-        <Plus size={24} />
-      </button>
+      <BottomNav lang={lang} active={navActive} expiringCount={expiringItems.length} onNavigate={navTo} />
+
+      {state.screen === 'item-form' && itemDraft && (
+        <ItemFormScreen
+          state={state} t={t} lang={lang} draft={itemDraft}
+          onDraftChange={setItemDraft} onSave={saveItem}
+          onCancel={() => setState((prev) => ({ ...prev, screen: 'category', selectedItemId: undefined }))}
+        />
+      )}
 
       {showCategoryModal && categoryModalDraft && (
         <CategoryModalSheet t={t} draft={categoryModalDraft} onDraftChange={setCategoryModalDraft} onSave={saveCategory} onDelete={deleteCategory} onClose={() => { setShowCategoryModal(false); setCategoryModalDraft(null); }} />
@@ -550,8 +603,8 @@ export default function App() {
       )}
 
       {errorMessage && (
-        <div className="toast" onClick={() => setErrorMessage(null)}>
-          <AlertCircle size={16} />
+        <div className="w-toast error" onClick={() => setErrorMessage(null)}>
+          <Icon name="alert" size={16} />
           <span>{errorMessage}</span>
         </div>
       )}

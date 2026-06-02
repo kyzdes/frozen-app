@@ -35,6 +35,12 @@ export type CopyDictionary = {
   pairName: string;
   done: string;
   status: string;
+  collapse: string;
+  expand: string;
+  allShelves: string;
+  shelf: string;
+  openFullList: string;
+  addShort: string;
 };
 
 export const COPY: Record<'ru' | 'en', CopyDictionary> = {
@@ -75,6 +81,12 @@ export const COPY: Record<'ru' | 'en', CopyDictionary> = {
     pairName: 'Название холодильника',
     done: 'Готово',
     status: 'Статус',
+    collapse: 'Свернуть',
+    expand: 'Развернуть',
+    allShelves: 'Все полки',
+    shelf: 'Полка',
+    openFullList: 'Открыть полный список',
+    addShort: 'Добавить +',
   },
   en: {
     appName: 'FreezerApp',
@@ -113,6 +125,12 @@ export const COPY: Record<'ru' | 'en', CopyDictionary> = {
     pairName: 'Freezer name',
     done: 'Done',
     status: 'Status',
+    collapse: 'Collapse',
+    expand: 'Expand',
+    allShelves: 'All shelves',
+    shelf: 'Shelf',
+    openFullList: 'Open full list',
+    addShort: 'Add +',
   },
 };
 

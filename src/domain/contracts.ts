@@ -3,9 +3,7 @@ export type HistoryEventType =
   | 'item_updated'
   | 'item_deleted'
   | 'packages_changed'
-  | 'items_changed'
-  | 'itemAdded'
-  | 'quantityChanged';
+  | 'items_changed';
 
 export interface CategoryDTO {
   id: string;

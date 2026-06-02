@@ -1,106 +1,112 @@
-import { ArrowLeft } from 'lucide-react';
-import type { ItemFormScreenProps } from '../lib/types';
+import { DateField, FrostModal, Stepper } from '../lib/frost';
+import { Icon } from '../lib/icons';
+import type { ItemDraft, ItemFormScreenProps } from '../lib/types';
 
-export function ItemFormScreen({ t, lang, draft, onDraftChange, onSave, onCancel }: ItemFormScreenProps) {
+const SHELVES = [1, 2, 3, 4, 5];
+
+export function ItemFormScreen({ state, t, lang, draft, onDraftChange, onSave, onCancel }: ItemFormScreenProps) {
+  const category = state.categories.find((c) => c.id === state.selectedCategoryId);
+  const set = (patch: Partial<ItemDraft>) => onDraftChange((prev) => (prev ? { ...prev, ...patch } : prev));
+
+  const canSave = Boolean(draft.name.trim()) && Boolean(draft.expirationDate);
+  const shelves = SHELVES.includes(draft.shelfNumber) ? SHELVES : [...SHELVES, draft.shelfNumber];
+
   return (
-    <section className="screen">
-      <header className="screen-header compact">
-        <button className="back-button" onClick={onCancel}>
-          <ArrowLeft size={18} />
-          {t.cancel}
-        </button>
-        <h2>{draft.id ? t.editItem : t.addItem}</h2>
-        <button className="pill primary" onClick={onSave}>
-          {t.done}
-        </button>
-      </header>
-
-      <div className="form-stack">
-        <label>
-          {t.itemName}
+    <FrostModal
+      title={draft.id ? t.editItem : t.addItem}
+      subtitle={category ? `${category.icon || '📦'} ${category.name}` : undefined}
+      onClose={onCancel}
+    >
+      <div className="w-form">
+        <div className="w-field">
+          <label>{t.itemName}</label>
           <input
+            className="w-input"
             value={draft.name}
-            onChange={(event) => onDraftChange((prev) => (prev ? { ...prev, name: event.target.value } : prev))}
-            placeholder={lang === 'ru' ? 'Например: Куриный бульон' : 'Example: Chicken broth'}
+            onChange={(event) => set({ name: event.target.value })}
+            placeholder={lang === 'ru' ? 'Например, куриный бульон' : 'e.g. chicken broth'}
+            autoFocus
           />
-        </label>
-
-        <div className="grid-2">
-          <label>
-            Упаковок
-            <input
-              type="number"
-              min={0}
-              value={draft.packagesCount}
-              onChange={(event) =>
-                onDraftChange((prev) => (prev ? { ...prev, packagesCount: Number.parseInt(event.target.value, 10) || 0 } : prev))
-              }
-            />
-          </label>
-          <label>
-            Штук
-            <input
-              type="number"
-              min={0}
-              value={draft.itemsCount}
-              onChange={(event) =>
-                onDraftChange((prev) => (prev ? { ...prev, itemsCount: Number.parseInt(event.target.value, 10) || 0 } : prev))
-              }
-            />
-          </label>
         </div>
 
-        <label>
-          Полка
-          <input
-            type="number"
-            min={1}
-            value={draft.shelfNumber}
-            onChange={(event) =>
-              onDraftChange((prev) => (prev ? { ...prev, shelfNumber: Number.parseInt(event.target.value, 10) || 1 } : prev))
-            }
-          />
-        </label>
-
-        <div className="grid-2">
-          <label>
-            Дата заморозки
-            <input
-              type="date"
-              value={draft.freezeDate}
-              onChange={(event) => onDraftChange((prev) => (prev ? { ...prev, freezeDate: event.target.value } : prev))}
-            />
-          </label>
-          <label>
-            Срок годности
-            <input
-              type="date"
-              value={draft.expirationDate}
-              onChange={(event) =>
-                onDraftChange((prev) => (prev ? { ...prev, expirationDate: event.target.value } : prev))
-              }
-            />
-          </label>
+        <div className="w-row2">
+          <div className="w-field">
+            <label>{lang === 'ru' ? 'Упаковки' : 'Packages'}</label>
+            <div className="w-stepfield">
+              <span className="w-num" style={{ fontSize: 17 }}>{draft.packagesCount}</span>
+              <Stepper value={draft.packagesCount} onChange={(v) => set({ packagesCount: v })} />
+            </div>
+          </div>
+          <div className="w-field">
+            <label>{lang === 'ru' ? 'Штуки' : 'Pieces'}</label>
+            <div className="w-stepfield">
+              <span className="w-num" style={{ fontSize: 17 }}>{draft.itemsCount}</span>
+              <Stepper value={draft.itemsCount} onChange={(v) => set({ itemsCount: v })} />
+            </div>
+          </div>
         </div>
 
-        <label>
-          Фото URL
+        <div className="w-field">
+          <label>{lang === 'ru' ? 'Срок годности' : 'Expiry date'}</label>
+          <DateField
+            value={draft.expirationDate}
+            onChange={(value) => set({ expirationDate: value })}
+            lang={lang}
+            placeholder={lang === 'ru' ? 'Выберите дату' : 'Pick a date'}
+          />
+        </div>
+
+        <div className="w-field">
+          <label>{lang === 'ru' ? 'Дата заморозки' : 'Freeze date'}</label>
+          <DateField
+            value={draft.freezeDate}
+            onChange={(value) => set({ freezeDate: value })}
+            lang={lang}
+            placeholder={lang === 'ru' ? 'Выберите дату' : 'Pick a date'}
+          />
+        </div>
+
+        <div className="w-field">
+          <label>{lang === 'ru' ? 'Полка' : 'Shelf'}</label>
+          <div className="w-chiprow">
+            {shelves.map((shelf) => (
+              <button
+                key={shelf}
+                className={`w-chip ${draft.shelfNumber === shelf ? 'on' : ''}`}
+                onClick={() => set({ shelfNumber: shelf })}
+              >
+                {lang === 'ru' ? 'Полка' : 'Shelf'} {shelf}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="w-field">
+          <label>{lang === 'ru' ? 'Фото (URL)' : 'Photo (URL)'}</label>
           <input
+            className="w-input"
             value={draft.photoUrl}
-            onChange={(event) => onDraftChange((prev) => (prev ? { ...prev, photoUrl: event.target.value } : prev))}
-            placeholder="https://..."
+            onChange={(event) => set({ photoUrl: event.target.value })}
+            placeholder="https://…"
           />
-        </label>
+        </div>
 
-        <label>
-          Заметки
+        <div className="w-field">
+          <label>{lang === 'ru' ? 'Заметки' : 'Notes'}</label>
           <textarea
+            className="w-input"
+            rows={2}
             value={draft.notes}
-            onChange={(event) => onDraftChange((prev) => (prev ? { ...prev, notes: event.target.value } : prev))}
-            rows={4}
+            onChange={(event) => set({ notes: event.target.value })}
+            placeholder={lang === 'ru' ? 'Необязательно' : 'Optional'}
           />
-        </label>
+        </div>
+
+        <button className="w-btn primary full" disabled={!canSave} onClick={onSave}>
+          <Icon name="check" size={18} />
+          {t.save}
+        </button>
       </div>
-    </section>
+    </FrostModal>
   );
 }

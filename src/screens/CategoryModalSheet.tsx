@@ -1,89 +1,79 @@
-import { Trash2, X } from 'lucide-react';
 import { PRESET_COLORS, PRESET_ICONS } from '../lib/copy';
-import type { CategoryModalProps } from '../lib/types';
+import { tint } from '../lib/format';
+import { FrostModal } from '../lib/frost';
+import { Icon } from '../lib/icons';
+import type { CategoryDraft, CategoryModalProps } from '../lib/types';
 
 export function CategoryModalSheet({ t, draft, onDraftChange, onSave, onDelete, onClose }: CategoryModalProps) {
+  const set = (patch: Partial<CategoryDraft>) => onDraftChange((prev) => (prev ? { ...prev, ...patch } : prev));
+
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" onClick={(event) => event.stopPropagation()}>
-        <header className="sheet-header">
-          <button className="icon-button" onClick={onClose}>
-            <X size={16} />
-          </button>
-          <h3>{draft.id ? t.editCategory : t.addCategory}</h3>
-          <button className="pill primary" onClick={onSave}>
-            {t.save}
-          </button>
-        </header>
-
-        <div className="form-stack">
-          <label>
-            {t.categoryName}
-            <input
-              value={draft.name}
-              onChange={(event) =>
-                onDraftChange((prev) => (prev ? { ...prev, name: event.target.value } : prev))
-              }
-            />
-          </label>
-
-          <div>
-            <p className="label-title">{t.icon}</p>
-            <div className="icon-grid">
-              {PRESET_ICONS.map((icon) => (
-                <button
-                  key={icon}
-                  className={`icon-pick ${draft.icon === icon ? 'icon-pick-active' : ''}`}
-                  onClick={() =>
-                    onDraftChange((prev) => (prev ? { ...prev, icon } : prev))
-                  }
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
+    <FrostModal title={draft.id ? t.editCategory : t.addCategory} onClose={onClose}>
+      <div className="w-form">
+        <div
+          className="w-prev"
+          style={{ background: `linear-gradient(0deg, ${tint(draft.color, 0.12)}, ${tint(draft.color, 0.12)}), var(--glass-fill)` }}
+        >
+          <div className="w-cap">{draft.icon}</div>
+          <div className="w-cat-meta">
+            <strong>{draft.name || t.categoryName}</strong>
+            <div className="sub">{t.preview}</div>
           </div>
-
-          <div>
-            <p className="label-title">{t.color}</p>
-            <div className="color-grid">
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={color}
-                  className={`color-pick ${draft.color === color ? 'color-pick-active' : ''}`}
-                  style={{ backgroundColor: color }}
-                  onClick={() =>
-                    onDraftChange((prev) => (prev ? { ...prev, color } : prev))
-                  }
-                />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="label-title">{t.preview}</p>
-            <div className="preview-card" style={{ backgroundColor: `${draft.color}20` }}>
-              <div className="category-badge" style={{ backgroundColor: draft.color }}>
-                {draft.icon}
-              </div>
-              <span>{draft.name || t.categoryName}</span>
-            </div>
-          </div>
-
-          {draft.id ? (
-            <button
-              className="settings-button danger"
-              onClick={() => {
-                onDelete(draft.id!);
-                onClose();
-              }}
-            >
-              <Trash2 size={16} />
-              {t.delete}
-            </button>
-          ) : null}
         </div>
+
+        <div className="w-field">
+          <label>{t.categoryName}</label>
+          <input
+            className="w-input"
+            value={draft.name}
+            onChange={(event) => set({ name: event.target.value })}
+            autoFocus
+          />
+        </div>
+
+        <div className="w-field">
+          <label>{t.icon}</label>
+          <div className="w-iconpick">
+            {PRESET_ICONS.map((icon) => (
+              <button key={icon} className={draft.icon === icon ? 'on' : ''} onClick={() => set({ icon })}>
+                {icon}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="w-field">
+          <label>{t.color}</label>
+          <div className="w-colorpick">
+            {PRESET_COLORS.map((color) => (
+              <button
+                key={color}
+                className={draft.color === color ? 'on' : ''}
+                style={{ background: color }}
+                onClick={() => set({ color })}
+                aria-label={color}
+              />
+            ))}
+          </div>
+        </div>
+
+        <button className="w-btn primary full" disabled={!draft.name.trim()} onClick={onSave}>
+          <Icon name="check" size={18} />
+          {t.save}
+        </button>
+        {draft.id ? (
+          <button
+            className="w-btn danger full"
+            onClick={() => {
+              onDelete(draft.id!);
+              onClose();
+            }}
+          >
+            <Icon name="trash" size={17} />
+            {t.delete}
+          </button>
+        ) : null}
       </div>
-    </div>
+    </FrostModal>
   );
 }

@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { JoinImportMode } from '../domain/contracts';
 import type { AppState, Category, Item } from '../domain/models';
 import type { CopyDictionary } from './copy';
@@ -34,6 +35,8 @@ export type HomeScreenProps = ScreenProps & {
   categories: Category[];
   filteredCategories: Category[];
   filteredItems: Item[];
+  items: Item[];
+  expiringItems: Item[];
   allShelves: number[];
   totalItems: number;
   expandedCategories: Set<string>;
@@ -81,7 +84,7 @@ export type HistoryScreenProps = ScreenProps & {
 export type SettingsScreenProps = ScreenProps & {
   syncingNow: boolean;
   authLoading: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  fileInputRef: RefObject<HTMLInputElement>;
   onSyncNow: () => void;
   onCreatePair: () => void;
   onJoinPair: () => void;

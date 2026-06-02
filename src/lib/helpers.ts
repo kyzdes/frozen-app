@@ -23,8 +23,23 @@ export function getDaysWord(count: number, lang: 'ru' | 'en'): string {
 }
 
 export function getExpirationState(item: Item): { type: 'fresh' | 'soon' | 'expired'; daysLeft: number } {
-  const ms = new Date(item.expirationDate).getTime() - Date.now();
-  const daysLeft = Math.ceil(ms / (1000 * 60 * 60 * 24));
+  // expirationDate is stored as UTC midnight ('YYYY-MM-DDT00:00:00.000Z'), so we
+  // compare whole-day differences between LOCAL midnights to avoid timezone skew.
+  const parsed = new Date(item.expirationDate);
+  const expirationLocalMidnight = new Date(
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth(),
+    parsed.getUTCDate()
+  ).getTime();
+
+  const now = new Date();
+  const todayLocalMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  ).getTime();
+
+  const daysLeft = Math.round((expirationLocalMidnight - todayLocalMidnight) / (1000 * 60 * 60 * 24));
 
   if (daysLeft < 0) return { type: 'expired', daysLeft };
   if (daysLeft <= 30) return { type: 'soon', daysLeft };
