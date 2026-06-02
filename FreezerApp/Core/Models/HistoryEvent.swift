@@ -27,6 +27,19 @@ struct HistoryEvent: Identifiable, Codable, Hashable, SoftDeletable {
     var updatedAt: Date
     var deletedAt: Date?
 
+    enum CodingKeys: String, CodingKey {
+        case id
+        case type
+        case itemId
+        case categoryId
+        case itemName
+        case packagesDelta
+        case itemsDelta
+        case timestamp
+        case updatedAt
+        case deletedAt
+    }
+
     init(
         id: String = UUID().uuidString.lowercased(),
         type: HistoryEventType,
@@ -50,6 +63,22 @@ struct HistoryEvent: Identifiable, Codable, Hashable, SoftDeletable {
         self.updatedAt = updatedAt
         self.deletedAt = deletedAt
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        type = try c.decode(HistoryEventType.self, forKey: .type)
+        itemId = try c.decodeIfPresent(String.self, forKey: .itemId)
+        categoryId = try c.decodeIfPresent(String.self, forKey: .categoryId)
+        itemName = try c.decode(String.self, forKey: .itemName)
+        packagesDelta = try c.decodeIfPresent(Int.self, forKey: .packagesDelta)
+        itemsDelta = try c.decodeIfPresent(Int.self, forKey: .itemsDelta)
+        timestamp = try c.decode(Date.self, forKey: .timestamp)
+        // The server may omit `updatedAt` (web DTO marks it optional); fall back
+        // to `timestamp` so the whole event still decodes.
+        updatedAt = (try? c.decode(Date.self, forKey: .updatedAt)) ?? timestamp
+        deletedAt = try c.decodeIfPresent(Date.self, forKey: .deletedAt)
+    }
 }
 
 // MARK: - Helper Methods
@@ -71,5 +100,42 @@ extension HistoryEvent {
             let sign = delta > 0 ? "+" : ""
             return "\(itemName): \(sign)\(delta) штук"
         }
+    }
+}
+
+// MARK: - Lossy Array Decoding
+
+/// Decodes an array element-by-element, silently skipping any element that
+/// fails to decode (e.g. a malformed entry or an unknown future enum case).
+/// A single bad element will not abort decoding of the whole batch.
+struct LossyArray<Element: Decodable>: Decodable {
+    let elements: [Element]
+
+    init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var result: [Element] = []
+        if let count = container.count {
+            result.reserveCapacity(count)
+        }
+        // `LossyElement.init` never throws, so each `decode` consumes exactly
+        // one element and advances the container, even when that element is
+        // malformed or has an unknown enum case.
+        while !container.isAtEnd {
+            let wrapped = try container.decode(LossyElement<Element>.self)
+            if let value = wrapped.value {
+                result.append(value)
+            }
+        }
+        elements = result
+    }
+}
+
+/// Wraps a single element so a decode failure is captured as `nil` rather than
+/// propagating and aborting the surrounding unkeyed container.
+private struct LossyElement<Element: Decodable>: Decodable {
+    let value: Element?
+
+    init(from decoder: Decoder) throws {
+        value = try? Element(from: decoder)
     }
 }

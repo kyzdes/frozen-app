@@ -124,9 +124,7 @@ export interface HistoryEvent {
     | 'item_updated'
     | 'item_deleted'
     | 'packages_changed'
-    | 'items_changed'
-    | 'itemAdded'
-    | 'quantityChanged';
+    | 'items_changed';
   item_id?: string;
   category_id?: string;
   item_name: string;

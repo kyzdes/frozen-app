@@ -313,6 +313,34 @@ class APIClient {
         let categories: [Category]
         let items: [Item]
         let history: [HistoryEvent]
+
+        enum CodingKeys: String, CodingKey {
+            case categories
+            case items
+            case history
+        }
+
+        init(categories: [Category], items: [Item], history: [HistoryEvent]) {
+            self.categories = categories
+            self.items = items
+            self.history = history
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            categories = try c.decode([Category].self, forKey: .categories)
+            items = try c.decode([Item].self, forKey: .items)
+            // Decode history lossily: skip any malformed event or unknown future
+            // event type instead of failing the entire sync response.
+            history = try c.decode(LossyArray<HistoryEvent>.self, forKey: .history).elements
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(categories, forKey: .categories)
+            try c.encode(items, forKey: .items)
+            try c.encode(history, forKey: .history)
+        }
     }
 
     func sync(lastKnownVersion: Int64, changes: SyncData) async throws -> SyncResponse {
