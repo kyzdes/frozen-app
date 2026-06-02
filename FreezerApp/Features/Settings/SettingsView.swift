@@ -16,11 +16,27 @@ enum AppearanceMode: String, CaseIterable {
     }
 }
 
+/// Gradient-filled rounded icon tile used on settings rows (Arctic Frost).
+private struct SettingsRowIcon: View {
+    let system: String
+    let colors: [Color]
+
+    var body: some View {
+        Image(systemName: system)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 30, height: 30)
+            .background(
+                LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing),
+                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            )
+    }
+}
+
 struct SettingsView: View {
     @EnvironmentObject var repository: DataRepository
     @EnvironmentObject var syncService: SyncService
     @EnvironmentObject var authState: AuthState
-    @Environment(\.dismiss) var dismiss
 
     @AppStorage("appLanguage") private var appLanguage: String = "ru"
     @State private var showExportPicker = false
@@ -43,103 +59,87 @@ struct SettingsView: View {
     private let backupService = BackupService.shared
     private let notificationService = NotificationService.shared
 
+    private var rowBackground: some View { Rectangle().fill(.ultraThinMaterial) }
+
     var body: some View {
-        NavigationStack {
+        ZStack {
+            ArcticBackdrop()
+
             List {
-                backupSection
-                appearanceSection
-                notificationsSection
-                if notificationsEnabled { notificationDaysSection }
-                syncSection
-                accountSection
-                if FeatureFlags.is_icloud_sync_active { iCloudSection }
-                statsSection
-                appInfoSection
+                syncSection.listRowBackground(rowBackground)
+                notificationsSection.listRowBackground(rowBackground)
+                if notificationsEnabled { notificationDaysSection.listRowBackground(rowBackground) }
+                appearanceSection.listRowBackground(rowBackground)
+                backupSection.listRowBackground(rowBackground)
+                accountSection.listRowBackground(rowBackground)
+                if FeatureFlags.is_icloud_sync_active { iCloudSection.listRowBackground(rowBackground) }
+                statsSection.listRowBackground(rowBackground)
+                appInfoSection.listRowBackground(rowBackground)
                 #if DEBUG
-                if developerOptionsVisible { developerToolsSection }
+                if developerOptionsVisible { developerToolsSection.listRowBackground(rowBackground) }
                 #endif
                 developerLinkSection
             }
-            .navigationTitle("Настройки")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Готово") {
-                        dismiss()
-                    }
-                }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .tint(AF.Color.accent)
+        }
+        .navigationTitle("Настройки")
+        .navigationBarTitleDisplayMode(.large)
+        .alert("Ошибка", isPresented: $showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+        .alert("Импорт данных", isPresented: $showImportConfirmation) {
+            Button("Отмена", role: .cancel) { pendingBackup = nil }
+            Button("Заменить", role: .destructive) {
+                if let backup = pendingBackup { importBackup(backup) }
             }
-            .alert("Ошибка", isPresented: $showError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
+        } message: {
+            if let backup = pendingBackup {
+                Text(String(
+                    format: NSLocalizedString("Будет импортировано %d групп и %d заготовок. Текущие данные будут заменены.", comment: ""),
+                    backup.categories.count, backup.items.count
+                ))
             }
-            .alert("Импорт данных", isPresented: $showImportConfirmation) {
-                Button("Отмена", role: .cancel) {
-                    pendingBackup = nil
-                }
-                Button("Заменить", role: .destructive) {
-                    if let backup = pendingBackup {
-                        importBackup(backup)
-                    }
-                }
-            } message: {
-                if let backup = pendingBackup {
-                    Text(
-                        String(
-                            format: NSLocalizedString(
-                                "Будет импортировано %d групп и %d заготовок. Текущие данные будут заменены.",
-                                comment: ""
-                            ),
-                            backup.categories.count,
-                            backup.items.count
-                        )
-                    )
-                }
+        }
+        .fileExporter(
+            isPresented: $showExportPicker,
+            document: exportDocument,
+            contentType: .json,
+            defaultFilename: "freezer_backup_\(Date().ISO8601Format()).json"
+        ) { result in
+            switch result {
+            case .success(let url):
+                print("✅ File saved to: \(url.path)")
+            case .failure(let error):
+                errorMessage = "Не удалось сохранить файл: \(error.localizedDescription)"
+                showError = true
             }
-            .fileExporter(
-                isPresented: $showExportPicker,
-                document: exportDocument,
-                contentType: .json,
-                defaultFilename: "freezer_backup_\(Date().ISO8601Format()).json"
-            ) { result in
-                switch result {
-                case .success(let url):
-                    print("✅ File saved to: \(url.path)")
-                case .failure(let error):
-                    print("❌ Save failed: \(error)")
-                    errorMessage = "Не удалось сохранить файл: \(error.localizedDescription)"
-                    showError = true
-                }
-            }
-            .fileImporter(
-                isPresented: $showImportPicker,
-                allowedContentTypes: [.json],
-                allowsMultipleSelection: false
-            ) { result in
-                handleImport(result)
-            }
-            .sheet(isPresented: $showCreatePair) {
-                CreatePairView()
-                    .environmentObject(syncService)
-            }
-            .sheet(isPresented: $showJoinPair) {
-                JoinPairView()
-                    .environmentObject(syncService)
-            }
-            .alert("Покинуть холодильник?", isPresented: $showLeavePairConfirmation) {
-                Button("Отмена", role: .cancel) { }
-                Button("Покинуть", role: .destructive) {
-                    leavePair()
-                }
-            } message: {
-                Text("Вы будете отключены от общего холодильника. Локальные данные останутся на устройстве.")
-            }
-            .preferredColorScheme(AppearanceMode(rawValue: appearanceMode)?.colorScheme)
-            .onChange(of: appLanguage) { _, newValue in
-                UserDefaults.standard.set([newValue], forKey: "AppleLanguages")
-                UserDefaults.standard.synchronize()
-            }
+        }
+        .fileImporter(
+            isPresented: $showImportPicker,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImport(result)
+        }
+        .sheet(isPresented: $showCreatePair) {
+            CreatePairView().environmentObject(syncService)
+        }
+        .sheet(isPresented: $showJoinPair) {
+            JoinPairView().environmentObject(syncService)
+        }
+        .alert("Покинуть холодильник?", isPresented: $showLeavePairConfirmation) {
+            Button("Отмена", role: .cancel) { }
+            Button("Покинуть", role: .destructive) { leavePair() }
+        } message: {
+            Text("Вы будете отключены от общего холодильника. Локальные данные останутся на устройстве.")
+        }
+        .onChange(of: appLanguage) { _, newValue in
+            UserDefaults.standard.set([newValue], forKey: "AppleLanguages")
+            UserDefaults.standard.synchronize()
         }
     }
 
@@ -151,28 +151,15 @@ struct SettingsView: View {
             Button {
                 exportData()
             } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 24)
-                    Text("Экспортировать данные")
-                        .foregroundColor(Theme.Colors.textPrimary)
-                }
+                rowLabel("Экспортировать данные", icon: "square.and.arrow.up", colors: [Color(hex: "#0E9E8E"), Color(hex: "#36C5B8")])
             }
-
             Button {
                 showImportPicker = true
             } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.down")
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 24)
-                    Text("Импортировать данные")
-                        .foregroundColor(Theme.Colors.textPrimary)
-                }
+                rowLabel("Импортировать данные", icon: "square.and.arrow.down", colors: [Color(hex: "#8E7BE6"), Color(hex: "#A594EC")])
             }
         } header: {
-            Text("Резервное копирование")
+            Text("Резервные копии")
         } footer: {
             Text("Экспортируйте данные для сохранения резервной копии или переноса на другое устройство")
         }
@@ -181,15 +168,26 @@ struct SettingsView: View {
     @ViewBuilder
     private var appearanceSection: some View {
         Section {
-            Picker("Язык", selection: $appLanguage) {
-                Text("Русский").tag("ru")
-                Text("English").tag("en")
+            HStack {
+                SettingsRowIcon(system: "globe", colors: [Color(hex: "#3098D4"), Color(hex: "#36C5D8")])
+                Text("Язык").foregroundStyle(AF.Color.textPrimary)
+                Spacer()
+                Picker("", selection: $appLanguage) {
+                    Text("Русский").tag("ru")
+                    Text("English").tag("en")
+                }
+                .pickerStyle(.segmented)
+                .fixedSize()
             }
-            .pickerStyle(.segmented)
 
-            Picker("Тема оформления", selection: $appearanceMode) {
+            Picker(selection: $appearanceMode) {
                 ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
                     Text(mode.rawValue).tag(mode.rawValue)
+                }
+            } label: {
+                HStack {
+                    SettingsRowIcon(system: "circle.lefthalf.filled", colors: [Color(hex: "#5B7CE0"), Color(hex: "#7E9BE6")])
+                    Text("Тема оформления").foregroundStyle(AF.Color.textPrimary)
                 }
             }
             .pickerStyle(.menu)
@@ -203,16 +201,20 @@ struct SettingsView: View {
     @ViewBuilder
     private var notificationsSection: some View {
         Section {
-            Toggle("Уведомления о сроках", isOn: $notificationsEnabled)
-                .font(Theme.Typography.body)
-                .onChange(of: notificationsEnabled) { _, newValue in
-                    if newValue {
-                        requestNotificationPermission()
-                        AnalyticsService.shared.trackNotificationsEnabled()
-                    } else {
-                        notificationService.removeAllPendingNotificationRequests()
-                    }
+            Toggle(isOn: $notificationsEnabled) {
+                HStack {
+                    SettingsRowIcon(system: "bell.fill", colors: [Color(hex: "#E0A24E"), Color(hex: "#E8B566")])
+                    Text("Уведомления о сроках").foregroundStyle(AF.Color.textPrimary)
                 }
+            }
+            .onChange(of: notificationsEnabled) { _, newValue in
+                if newValue {
+                    requestNotificationPermission()
+                    AnalyticsService.shared.trackNotificationsEnabled()
+                } else {
+                    notificationService.removeAllPendingNotificationRequests()
+                }
+            }
         } header: {
             Text("Уведомления")
         } footer: {
@@ -224,11 +226,8 @@ struct SettingsView: View {
     private var notificationDaysSection: some View {
         Section {
             ForEach([3, 7, 14], id: \.self) { days in
-                Toggle(
-                    "\(days) \(daysWord(days))",
-                    isOn: notificationToggleBinding(for: days)
-                )
-                .font(Theme.Typography.body)
+                Toggle("\(days) \(daysWord(days))", isOn: notificationToggleBinding(for: days))
+                    .foregroundStyle(AF.Color.textPrimary)
             }
         } header: {
             Text("Напоминать за")
@@ -242,25 +241,12 @@ struct SettingsView: View {
         Button {
             showCreatePair = true
         } label: {
-            HStack {
-                Image(systemName: "plus.circle")
-                    .foregroundColor(Theme.Colors.primary)
-                    .frame(width: 24)
-                Text("Создать общий холодильник")
-                    .foregroundColor(Theme.Colors.textPrimary)
-            }
+            rowLabel("Создать общий холодильник", icon: "plus", colors: [Color(hex: "#3098D4"), Color(hex: "#36C5D8")], chevron: true)
         }
-
         Button {
             showJoinPair = true
         } label: {
-            HStack {
-                Image(systemName: "link")
-                    .foregroundColor(Theme.Colors.primary)
-                    .frame(width: 24)
-                Text("Подключиться к холодильнику")
-                    .foregroundColor(Theme.Colors.textPrimary)
-            }
+            rowLabel("Подключиться к холодильнику", icon: "link", colors: [Color(hex: "#5B7CE0"), Color(hex: "#7E9BE6")], chevron: true)
         }
     }
 
@@ -268,46 +254,32 @@ struct SettingsView: View {
     private var syncSection: some View {
         Section {
             if syncService.currentPair != nil {
-                HStack(spacing: 12) {
-                    Image(systemName: syncService.syncStatus.iconName)
-                        .foregroundColor(Color(syncService.syncStatus.iconColor))
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: AF.Space.m) {
+                    SettingsRowIcon(system: "checkmark.shield.fill", colors: [Color(hex: "#0E9E8E"), Color(hex: "#36C5B8")])
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("Статус синхронизации")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                            .font(Theme.Typography.body)
+                            .foregroundStyle(AF.Color.textPrimary)
+                            .font(AF.Typography.body)
                         Text(syncService.syncStatus.displayText)
-                            .foregroundColor(Theme.Colors.textSecondary)
-                            .font(Theme.Typography.caption)
+                            .foregroundStyle(AF.Color.textTertiary)
+                            .font(AF.Typography.caption)
                     }
                     Spacer()
+                    Image(systemName: syncService.syncStatus.iconName)
+                        .foregroundStyle(Color(syncService.syncStatus.iconColor))
                 }
 
                 Button {
-                    Task {
-                        await syncService.syncNow()
-                    }
+                    Task { await syncService.syncNow() }
                 } label: {
-                    HStack {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 24)
-                        Text("Синхронизировать вручную")
-                            .foregroundColor(Theme.Colors.textPrimary)
-                    }
+                    rowLabel("Синхронизировать вручную", icon: "arrow.triangle.2.circlepath", colors: [Color(hex: "#3098D4"), Color(hex: "#36C5D8")])
                 }
 
                 if syncService.pairMode == "shared" {
                     Button(role: .destructive) {
                         showLeavePairConfirmation = true
                     } label: {
-                        HStack {
-                            Image(systemName: "xmark.circle")
-                                .foregroundColor(.red)
-                                .frame(width: 24)
-                            Text("Покинуть холодильник")
-                                .foregroundColor(.red)
-                        }
+                        rowLabel("Покинуть холодильник", icon: "xmark", colors: [Color(hex: "#FF7D97"), Color(hex: "#E23B5E")], destructive: true)
                     }
                 } else {
                     pairActionButtons
@@ -316,12 +288,12 @@ struct SettingsView: View {
                 pairActionButtons
             }
         } header: {
-            Text("Синхронизация с партнером")
+            Text("Синхронизация с партнёром")
         } footer: {
             if syncService.currentPair != nil {
-                Text("Ваши данные синхронизируются с партнером каждые 5 секунд")
+                Text("Ваши данные синхронизируются с партнёром каждые 5 секунд")
             } else {
-                Text("Создайте общий холодильник или подключитесь к существующему для синхронизации данных с партнером")
+                Text("Создайте общий холодильник или подключитесь к существующему для синхронизации данных с партнёром")
             }
         }
     }
@@ -330,23 +302,14 @@ struct SettingsView: View {
     private var accountSection: some View {
         Section {
             Button(role: .destructive) {
-                Task {
-                    await authState.logout(syncService: syncService, repository: repository)
-                    dismiss()
-                }
+                Task { await authState.logout(syncService: syncService, repository: repository) }
             } label: {
-                HStack {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .foregroundColor(.red)
-                        .frame(width: 24)
-                    Text("Выйти из аккаунта")
-                        .foregroundColor(.red)
-                }
+                rowLabel("Выйти из аккаунта", icon: "rectangle.portrait.and.arrow.right", colors: [Color(hex: "#FF7D97"), Color(hex: "#E23B5E")], destructive: true)
             }
         } header: {
             Text("Аккаунт")
         } footer: {
-            Text("Выход очистит локальные данные и вернет на экран входа")
+            Text("Выход очистит локальные данные и вернёт на экран входа")
         }
     }
 
@@ -354,20 +317,17 @@ struct SettingsView: View {
     private var iCloudSection: some View {
         Section {
             HStack {
-                Image(systemName: "icloud")
-                    .foregroundColor(backupService.checkiCloudStatus() ? Theme.Colors.success : Theme.Colors.textSecondary)
-                    .frame(width: 24)
-                Text("Синхронизация iCloud")
-                    .foregroundColor(Theme.Colors.textPrimary)
+                SettingsRowIcon(system: "icloud.fill", colors: [Color(hex: "#3098D4"), Color(hex: "#36C5D8")])
+                Text("Синхронизация iCloud").foregroundStyle(AF.Color.textPrimary)
                 Spacer()
                 Text(backupService.checkiCloudStatus() ? "Включена" : "Выключена")
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .font(Theme.Typography.callout)
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .font(AF.Typography.callout)
             }
         } header: {
             Text("Локальная синхронизация")
         } footer: {
-            Text("При включенной синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключенными к одному Apple ID")
+            Text("При включённой синхронизации iCloud ваши данные автоматически синхронизируются между всеми устройствами, подключёнными к одному Apple ID")
         }
     }
 
@@ -375,21 +335,18 @@ struct SettingsView: View {
     private var statsSection: some View {
         Section {
             HStack {
-                Text("Групп")
-                    .foregroundColor(Theme.Colors.textPrimary)
+                Text("Групп").foregroundStyle(AF.Color.textPrimary)
                 Spacer()
                 Text("\(repository.categories.count)")
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .font(Theme.Typography.callout)
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .font(AF.Typography.callout)
             }
-
             HStack {
-                Text("Заготовок")
-                    .foregroundColor(Theme.Colors.textPrimary)
+                Text("Заготовок").foregroundStyle(AF.Color.textPrimary)
                 Spacer()
                 Text("\(repository.items.count)")
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .font(Theme.Typography.callout)
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .font(AF.Typography.callout)
             }
         } header: {
             Text("Статистика")
@@ -399,43 +356,37 @@ struct SettingsView: View {
     @ViewBuilder
     private var appInfoSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-                HStack {
-                    Text("Версия")
-                        .foregroundColor(Theme.Colors.textPrimary)
-                    Spacer()
-                    Text(appVersion)
-                        .foregroundColor(Theme.Colors.textSecondary)
-                        .font(Theme.Typography.callout)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    #if DEBUG
-                    if !developerOptionsVisible {
-                        developerTapCount += 1
-                        if developerTapCount >= 5 {
-                            developerOptionsVisible = true
-                            developerTapCount = 0
-                        }
+            HStack {
+                Text("Версия").foregroundStyle(AF.Color.textPrimary)
+                Spacer()
+                Text(appVersion)
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .font(AF.Typography.callout)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                #if DEBUG
+                if !developerOptionsVisible {
+                    developerTapCount += 1
+                    if developerTapCount >= 5 {
+                        developerOptionsVisible = true
+                        developerTapCount = 0
                     }
-                    #endif
                 }
+                #endif
+            }
 
-                Button {
-                    if let url = URL(string: "mailto:ceo@moone.dev") {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    HStack {
-                        Text("Написать в поддержку")
-                            .foregroundColor(Theme.Colors.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(Theme.Colors.textSecondary)
-                    }
+            Button {
+                if let url = URL(string: "mailto:ceo@moone.dev") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                HStack {
+                    Text("Написать в поддержку").foregroundStyle(AF.Color.accent)
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(AF.Color.textTertiary)
                 }
             }
-            .padding(.vertical, Theme.Spacing.xs)
         } header: {
             Text("О приложении")
         }
@@ -450,51 +401,27 @@ struct SettingsView: View {
                 errorMessage = "Все данные синхронизации удалены. Перезапустите приложение."
                 showError = true
             } label: {
-                HStack {
-                    Image(systemName: "trash.circle")
-                        .foregroundColor(.red)
-                        .frame(width: 24)
-                    Text("Очистить данные синхронизации")
-                        .foregroundColor(.red)
-                }
+                rowLabel("Очистить данные синхронизации", icon: "trash", colors: [Color(hex: "#FF7D97"), Color(hex: "#E23B5E")], destructive: true)
             }
 
             Button {
                 errorMessage = debugInfoString
                 showError = true
             } label: {
-                HStack {
-                    Image(systemName: "info.circle")
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 24)
-                    Text("Показать debug info")
-                        .foregroundColor(Theme.Colors.textPrimary)
-                }
+                rowLabel("Показать debug info", icon: "info.circle", colors: [Color(hex: "#3098D4"), Color(hex: "#36C5D8")])
             }
 
             Button {
                 UIPasteboard.general.string = debugInfoString
             } label: {
-                HStack {
-                    Image(systemName: "doc.on.doc")
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 24)
-                    Text("Скопировать debug info")
-                        .foregroundColor(Theme.Colors.textPrimary)
-                }
+                rowLabel("Скопировать debug info", icon: "doc.on.doc", colors: [Color(hex: "#5B7CE0"), Color(hex: "#7E9BE6")])
             }
 
             #if DEBUG
             Button {
                 repository.addDemoData()
             } label: {
-                HStack {
-                    Image(systemName: "shippingbox.fill")
-                        .foregroundColor(Theme.Colors.primary)
-                        .frame(width: 24)
-                    Text("Добавить демо данные")
-                        .foregroundColor(Theme.Colors.textPrimary)
-                }
+                rowLabel("Добавить демо данные", icon: "shippingbox.fill", colors: [Color(hex: "#0E9E8E"), Color(hex: "#36C5B8")])
             }
             #endif
         } header: {
@@ -511,34 +438,38 @@ struct SettingsView: View {
                 HStack {
                     Spacer()
                     Text("ПРОДУКТОВНЕР")
-                        .font(Theme.Typography.callout)
+                        .font(AF.Typography.callout)
                         .fontWeight(.semibold)
-                        .foregroundColor(Theme.Colors.primary)
+                        .foregroundStyle(AF.Color.accent)
                     Spacer()
                 }
-                .padding(.vertical, Theme.Spacing.sm)
+                .padding(.vertical, AF.Space.s)
             }
         }
         .listRowBackground(Color.clear)
     }
 
+    // MARK: - Row label helper
+
+    private func rowLabel(_ title: String, icon: String, colors: [Color], chevron: Bool = false, destructive: Bool = false) -> some View {
+        HStack(spacing: AF.Space.m) {
+            SettingsRowIcon(system: icon, colors: colors)
+            Text(title).foregroundStyle(destructive ? AF.Color.danger : AF.Color.textPrimary)
+            Spacer()
+            if chevron {
+                Image(systemName: "chevron.right").foregroundStyle(AF.Color.textTertiary).font(.system(size: 14, weight: .semibold))
+            }
+        }
+    }
+
     // MARK: - Export
 
     private func exportData() {
-        print("📤 Starting export...")
-        print("📊 Groups: \(repository.categories.count), Items: \(repository.items.count)")
-
         do {
-            let data = try backupService.exportData(
-                categories: repository.categories,
-                items: repository.items
-            )
-            print("✅ Export data created, size: \(data.count) bytes")
+            let data = try backupService.exportData(categories: repository.categories, items: repository.items)
             exportDocument = BackupDocument(data: data)
             showExportPicker = true
-            print("🎉 Showing file exporter...")
         } catch {
-            print("❌ Export failed: \(error)")
             errorMessage = "Не удалось экспортировать данные: \(error.localizedDescription)"
             showError = true
         }
@@ -549,10 +480,7 @@ struct SettingsView: View {
     private func handleImport(_ result: Result<[URL], Error>) {
         do {
             guard let url = try result.get().first else { return }
-
             let backup = try backupService.importData(from: url)
-
-            // Validate backup
             let validation = backupService.validateBackup(backup)
             guard validation.isValid else {
                 if case .invalid(let issues) = validation {
@@ -561,11 +489,8 @@ struct SettingsView: View {
                 }
                 return
             }
-
-            // Show confirmation dialog
             pendingBackup = backup
             showImportConfirmation = true
-
         } catch {
             errorMessage = "Не удалось импортировать данные: \(error.localizedDescription)"
             showError = true
@@ -573,11 +498,8 @@ struct SettingsView: View {
     }
 
     private func importBackup(_ backup: BackupService.BackupData) {
-        // Replace all data
         repository.replaceAllData(categories: backup.categories, items: backup.items)
-
         pendingBackup = nil
-        dismiss()
     }
 
     // MARK: - Helpers
@@ -598,9 +520,7 @@ struct SettingsView: View {
     // MARK: - Notifications
 
     private var notificationDays: [Int] {
-        guard let days = try? JSONDecoder().decode([Int].self, from: notificationDaysData) else {
-            return [3, 7, 14]
-        }
+        guard let days = try? JSONDecoder().decode([Int].self, from: notificationDaysData) else { return [3, 7, 14] }
         return days
     }
 
@@ -608,11 +528,7 @@ struct SettingsView: View {
         guard let data = try? JSONEncoder().encode(days) else { return }
         notificationDaysData = data
         notificationService.notificationDays = days
-
-        // Обновляем уведомления
-        Task {
-            await notificationService.scheduleNotifications(for: repository.items)
-        }
+        Task { await notificationService.scheduleNotifications(for: repository.items) }
     }
 
     private func requestNotificationPermission() {
@@ -643,10 +559,7 @@ struct SettingsView: View {
             set: { isOn in
                 var updated = notificationDays
                 if isOn {
-                    if !updated.contains(days) {
-                        updated.append(days)
-                        updated.sort()
-                    }
+                    if !updated.contains(days) { updated.append(days); updated.sort() }
                 } else {
                     updated.removeAll { $0 == days }
                 }
@@ -676,9 +589,7 @@ struct BackupDocument: FileDocument {
 
     var data: Data
 
-    init(data: Data) {
-        self.data = data
-    }
+    init(data: Data) { self.data = data }
 
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
@@ -688,6 +599,6 @@ struct BackupDocument: FileDocument {
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        return FileWrapper(regularFileWithContents: data)
+        FileWrapper(regularFileWithContents: data)
     }
 }

@@ -1,182 +1,191 @@
 import SwiftUI
 
 struct HistoryView: View {
-    let history: [HistoryEvent]
+    @EnvironmentObject var repository: DataRepository
     @State private var selectedDate: Date? = nil
     @State private var sortDescending: Bool = true
+
+    private var history: [HistoryEvent] { repository.history }
 
     private var filteredHistory: [HistoryEvent] {
         let calendar = Calendar.current
         let sorted = history.sorted { sortDescending ? $0.timestamp > $1.timestamp : $0.timestamp < $1.timestamp }
-
         guard let date = selectedDate else { return sorted }
-
-        return sorted.filter { event in
-            calendar.isDate(event.timestamp, inSameDayAs: date)
-        }
+        return sorted.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }
     }
 
-    private var grouped: [(key: String, events: [HistoryEvent])] {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-
-        let groupedDict = Dictionary(grouping: filteredHistory) { event in
-            formatter.string(from: event.timestamp)
-        }
+    private var grouped: [(day: Date, title: String, events: [HistoryEvent])] {
+        let calendar = Calendar.current
+        let groupedDict = Dictionary(grouping: filteredHistory) { calendar.startOfDay(for: $0.timestamp) }
         return groupedDict
-            .map { ($0.key, $0.value) }
-            .sorted { sortDescending ? $0.0 > $1.0 : $0.0 < $1.0 }
+            .map { (day: $0.key, title: HistoryView.dayTitle($0.key), events: $0.value) }
+            .sorted { sortDescending ? $0.day > $1.day : $0.day < $1.day }
     }
 
     var body: some View {
-        List {
-            controls
+        ZStack {
+            ArcticBackdrop()
 
-            if filteredHistory.isEmpty {
-                Section {
-                    VStack(spacing: Theme.Spacing.md) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 48))
-                            .foregroundColor(Theme.Colors.textTertiary)
-                        Text(LK("История пуста"))
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.textSecondary)
+            List {
+                controls
+
+                if filteredHistory.isEmpty {
+                    Section {
+                        VStack(spacing: AF.Space.m) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 44))
+                                .foregroundStyle(AF.Color.textTertiary)
+                            Text("История пуста")
+                                .font(AF.Typography.body)
+                                .foregroundStyle(AF.Color.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, AF.Space.xl)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, Theme.Spacing.xl)
-                    .listRowSeparator(.hidden)
-                }
-            } else {
-                ForEach(grouped, id: \.key) { section in
-                    Section(section.key) {
-                        ForEach(section.events) { event in
-                            HistoryRow(event: event)
+                } else {
+                    ForEach(grouped, id: \.day) { section in
+                        Section {
+                            ForEach(section.events) { event in
+                                HistoryRow(event: event, categoryName: categoryName(for: event))
+                                    .listRowBackground(rowBackground)
+                                    .listRowSeparatorTint(AF.Color.hairline)
+                            }
+                        } header: {
+                            Text(section.title)
+                                .font(AF.Typography.footnote.weight(.semibold))
+                                .foregroundStyle(AF.Color.textTertiary)
                         }
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
         }
-        .listStyle(.insetGrouped)
-        .navigationTitle(LK("История"))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("История")
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private var controls: some View {
         Section {
             HStack {
-                Text(LK("Сортировка"))
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .font(Theme.Typography.subheadline)
-
+                Text("Сортировка")
+                    .font(AF.Typography.subheadline)
+                    .foregroundStyle(AF.Color.textSecondary)
                 Spacer()
-
                 Picker("", selection: $sortDescending) {
-                    Text(LK("Новые")).tag(true)
-                    Text(LK("Старые")).tag(false)
+                    Text("Новые").tag(true)
+                    Text("Старые").tag(false)
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 180)
             }
 
-            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                Text(LK("Фильтр по дате"))
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .font(Theme.Typography.subheadline)
+            HStack {
+                DatePicker(
+                    "Фильтр по дате",
+                    selection: Binding(get: { selectedDate ?? Date() }, set: { selectedDate = $0 }),
+                    displayedComponents: .date
+                )
+                .font(AF.Typography.subheadline)
+                .tint(AF.Color.accent)
 
-                HStack {
-                    DatePicker(
-                        "",
-                        selection: Binding(
-                            get: { selectedDate ?? Date() },
-                            set: { newValue in selectedDate = newValue }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .labelsHidden()
-                    .disabled(false)
-
+                if selectedDate != nil {
                     Button {
                         withAnimation { selectedDate = nil }
                     } label: {
-                        HStack(spacing: Theme.Spacing.xs) {
-                            Image(systemName: "arrow.uturn.backward.circle")
-                            Text(LK("Сбросить"))
-                        }
-                        .font(Theme.Typography.caption)
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(AF.Color.textTertiary)
                     }
-                    .buttonStyle(.borderless)
-                    .disabled(selectedDate == nil)
+                    .buttonStyle(.plain)
                 }
             }
         }
+        .listRowBackground(rowBackground)
+    }
+
+    private var rowBackground: some View {
+        Rectangle().fill(.ultraThinMaterial)
+    }
+
+    private func categoryName(for event: HistoryEvent) -> String? {
+        guard let id = event.categoryId else { return nil }
+        return repository.categories.first { $0.id == id }?.name
+    }
+
+    static func dayTitle(_ day: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(day) { return "Сегодня" }
+        if calendar.isDateInYesterday(day) { return "Вчера" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: Locale.preferredLanguages.first ?? "ru")
+        f.dateFormat = "d MMMM"
+        return f.string(from: day)
     }
 }
 
 struct HistoryRow: View {
     let event: HistoryEvent
-
-    private var subtitle: String {
-        switch event.type {
-        case .itemAdded:
-            return LKS("Добавлено")
-        case .itemUpdated:
-            return LKS("Обновлено")
-        case .itemDeleted:
-            return LKS("Удалено")
-        case .packagesChanged:
-            if let delta = event.packagesDelta {
-                return "\(LKS("Упаковки изменены")): \(delta > 0 ? "+" : "")\(delta)"
-            }
-            return LKS("Упаковки изменены")
-        case .itemsChanged:
-            if let delta = event.itemsDelta {
-                return "\(LKS("Количество изменено")): \(delta > 0 ? "+" : "")\(delta)"
-            }
-            return LKS("Количество изменено")
-        }
-    }
+    var categoryName: String? = nil
 
     private var iconName: String {
         switch event.type {
-        case .itemAdded:
-            return "plus.circle.fill"
-        case .itemUpdated:
-            return "pencil.circle.fill"
-        case .itemDeleted:
-            return "trash.circle.fill"
-        case .packagesChanged, .itemsChanged:
-            return "arrow.up.arrow.down.circle.fill"
+        case .itemAdded: return "plus"
+        case .itemUpdated: return "pencil"
+        case .itemDeleted: return "trash"
+        case .packagesChanged, .itemsChanged: return "arrow.up.arrow.down"
         }
     }
 
-    private var timeString: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: event.timestamp)
+    private var iconColor: Color {
+        switch event.type {
+        case .itemAdded: return AF.Color.fresh
+        case .itemUpdated: return AF.Color.accent
+        case .itemDeleted: return AF.Color.expired
+        case .packagesChanged, .itemsChanged: return AF.Color.soon
+        }
+    }
+
+    private var subtitle: String {
+        let time = HistoryRow.timeString(event.timestamp)
+        if let categoryName { return "\(categoryName) · \(time)" }
+        return time
     }
 
     var body: some View {
-        HStack(spacing: Theme.Spacing.md) {
+        HStack(spacing: AF.Space.m) {
             Image(systemName: iconName)
-                .foregroundColor(Theme.Colors.primary)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 34, height: 34)
+                .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(event.itemName)
-                    .font(Theme.Typography.body)
-                    .foregroundColor(Theme.Colors.textPrimary)
-
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event.displayText)
+                    .font(AF.Typography.callout.weight(.medium))
+                    .foregroundStyle(AF.Color.textPrimary)
                 Text(subtitle)
-                    .font(Theme.Typography.subheadline)
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(AF.Typography.caption)
+                    .foregroundStyle(AF.Color.textTertiary)
             }
-
-            Spacer()
-
-            Text(timeString)
-                .font(Theme.Typography.caption)
-                .foregroundColor(Theme.Colors.textSecondary)
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, Theme.Spacing.sm)
+        .padding(.vertical, 4)
+    }
+
+    static func timeString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: Locale.preferredLanguages.first ?? "ru")
+        f.timeStyle = .short
+        f.dateStyle = .none
+        return f.string(from: date)
+    }
+}
+
+#Preview {
+    NavigationStack {
+        HistoryView()
+            .environmentObject(DataRepository())
     }
 }

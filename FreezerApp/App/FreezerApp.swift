@@ -82,92 +82,144 @@ struct AuthGateView: View {
 
     var body: some View {
         ZStack {
-            Theme.Colors.background
-                .ignoresSafeArea()
+            ArcticBackdrop()
 
-            VStack(spacing: 20) {
-                VStack(spacing: 8) {
-                    Image(systemName: "snowflake")
-                        .font(.system(size: 40, weight: .medium))
-                        .foregroundColor(Theme.Colors.primary)
+            ScrollView {
+                VStack(spacing: AF.Space.xxl) {
+                    // Brand logo
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(AF.Color.accent.opacity(0.18))
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .frame(width: 92, height: 92)
+                        .overlay(
+                            Text("❄️").font(.system(size: 46))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .strokeBorder(AF.Color.frostEdge, lineWidth: 0.5)
+                        )
+                        .shadow(color: AF.Color.accent.opacity(0.4), radius: 22, x: 0, y: 12)
 
-                    Text("FreezerApp")
-                        .font(.largeTitle.weight(.bold))
-
-                    Text(mode == .login ? "Войдите в аккаунт" : "Создайте аккаунт")
-                        .foregroundColor(Theme.Colors.textSecondary)
-                }
-
-                HStack(spacing: 10) {
-                    Button("Вход") {
-                        mode = .login
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(mode == .login ? Theme.Colors.primary : Theme.Colors.cardBackground)
-
-                    Button("Регистрация") {
-                        mode = .register
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(mode == .register ? Theme.Colors.primary : Theme.Colors.cardBackground)
-                }
-
-                VStack(spacing: 12) {
-                    if mode == .register {
-                        TextField("Имя", text: $name)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
-                            .padding(12)
-                            .background(Theme.Colors.cardBackground)
-                            .cornerRadius(10)
+                    VStack(spacing: 6) {
+                        Text("Морозилка")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(AF.Color.textPrimary)
+                        Text(mode == .login ? "Войдите, чтобы открыть холодильник" : "Создайте аккаунт за 30 секунд")
+                            .font(AF.Typography.subheadline)
+                            .foregroundStyle(AF.Color.textSecondary)
+                            .multilineTextAlignment(.center)
                     }
 
-                    TextField("Email", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding(12)
-                        .background(Theme.Colors.cardBackground)
-                        .cornerRadius(10)
+                    // Login / register segmented
+                    HStack(spacing: 2) {
+                        authTab("Вход", active: mode == .login) { mode = .login }
+                        authTab("Регистрация", active: mode == .register) { mode = .register }
+                    }
+                    .padding(2)
+                    .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
 
-                    SecureField("Пароль (минимум 8 символов)", text: $password)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding(12)
-                        .background(Theme.Colors.cardBackground)
-                        .cornerRadius(10)
-                }
-
-                Button {
-                    submit()
-                } label: {
-                    HStack {
-                        if isSubmitting {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .tint(.white)
-                        } else {
-                            Text(mode == .login ? "Войти" : "Создать аккаунт")
-                                .fontWeight(.semibold)
+                    // Fields
+                    VStack(spacing: 0) {
+                        if mode == .register {
+                            authField(label: "Имя") {
+                                placeholder("Ваше имя", isShown: name.isEmpty)
+                                TextField("", text: $name)
+                                    .textInputAutocapitalization(.words)
+                                    .autocorrectionDisabled()
+                            }
+                            Divider().overlay(AF.Color.hairline)
+                        }
+                        authField(label: "Email") {
+                            placeholder("you@example.com", isShown: email.isEmpty)
+                            TextField("", text: $email)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                        }
+                        Divider().overlay(AF.Color.hairline)
+                        authField(label: "Пароль") {
+                            placeholder("Минимум 8 символов", isShown: password.isEmpty)
+                            SecureField("", text: $password)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Theme.Colors.primary)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .disabled(isSubmitting)
+                    .afGroup()
 
-                if let errorMessage = authState.errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundColor(.red)
+                    Button {
+                        submit()
+                    } label: {
+                        if isSubmitting {
+                            ProgressView().tint(AF.Color.onAccent)
+                        } else {
+                            Text(mode == .login ? "Войти" : "Создать аккаунт")
+                        }
+                    }
+                    .buttonStyle(AFPrimaryButtonStyle())
+                    .disabled(isSubmitting)
+
+                    if let errorMessage = authState.errorMessage {
+                        Text(errorMessage)
+                            .font(AF.Typography.footnote)
+                            .foregroundStyle(AF.Color.danger)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Text("Данные хранятся локально и синхронизируются между устройствами")
+                        .font(AF.Typography.caption)
+                        .foregroundStyle(AF.Color.textQuaternary)
                         .multilineTextAlignment(.center)
                 }
+                .padding(.horizontal, AF.Space.xxl)
+                .padding(.vertical, 48)
+                .frame(maxWidth: .infinity, minHeight: 600)
             }
-            .padding(24)
+            .scrollBounceBehavior(.basedOnSize)
         }
+    }
+
+    private func authTab(_ title: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(AF.Typography.callout)
+                .fontWeight(.medium)
+                .foregroundStyle(active ? AF.Color.textPrimary : AF.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background {
+                    if active {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(.thickMaterial)
+                            .shadow(color: AF.Color.shadowSoft, radius: 3, x: 0, y: 1)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func authField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(AF.Typography.footnote)
+                .foregroundStyle(AF.Color.textSecondary)
+            ZStack(alignment: .leading) {
+                content()
+            }
+            .font(AF.Typography.body)
+            .foregroundStyle(AF.Color.textPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, AF.Space.l)
+        .padding(.vertical, AF.Space.m)
+    }
+
+    private func placeholder(_ text: String, isShown: Bool) -> some View {
+        Text(text)
+            .foregroundStyle(AF.Color.textQuaternary)
+            .opacity(isShown ? 1 : 0)
+            .allowsHitTesting(false)
     }
 
     private func submit() {
@@ -207,6 +259,33 @@ struct AuthGateView: View {
     }
 }
 
+struct RootTabView: View {
+    @AppStorage("appearanceMode") private var appearanceMode: String = AppearanceMode.system.rawValue
+
+    init() {
+        // Keep the chrome (nav/tab bars) frosted; let content blur beneath on scroll.
+        let tabAppearance = UITabBarAppearance()
+        tabAppearance.configureWithDefaultBackground()
+        UITabBar.appearance().standardAppearance = tabAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabAppearance
+    }
+
+    var body: some View {
+        TabView {
+            NavigationStack { CategoryListView() }
+                .tabItem { Label("Группы", systemImage: "square.stack.3d.up") }
+
+            NavigationStack { HistoryView() }
+                .tabItem { Label("История", systemImage: "clock") }
+
+            NavigationStack { SettingsView() }
+                .tabItem { Label("Настройки", systemImage: "gearshape") }
+        }
+        .tint(AF.Color.accent)
+        .preferredColorScheme(AppearanceMode(rawValue: appearanceMode)?.colorScheme)
+    }
+}
+
 @main
 struct FreezerApp: App {
     @StateObject private var syncService = SyncService.shared
@@ -242,9 +321,14 @@ struct FreezerApp: App {
         WindowGroup {
             Group {
                 if authState.isChecking {
-                    ProgressView("Загрузка…")
+                    ZStack {
+                        ArcticBackdrop()
+                        ProgressView("Загрузка…")
+                            .tint(AF.Color.accent)
+                            .foregroundStyle(AF.Color.textSecondary)
+                    }
                 } else if authState.isAuthenticated {
-                    CategoryListView()
+                    RootTabView()
                 } else {
                     AuthGateView()
                 }

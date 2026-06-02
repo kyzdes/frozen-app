@@ -48,3 +48,6 @@ logs/security/
 # Misc
 *.log
 .claude/
+
+# Local Xcode simulator build output
+build-sim/

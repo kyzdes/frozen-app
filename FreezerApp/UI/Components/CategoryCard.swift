@@ -1,96 +1,77 @@
 import SwiftUI
 
+/// Home category header row — frosted "ice capsule" + name + count, with an
+/// edit pencil and an expand/collapse chevron. The frosted card background is
+/// applied by the parent (so embedded item previews share the same card).
 struct CategoryCard: View {
     let category: Category
+    var itemCount: Int
     var isExpanded: Bool = false
+    var onOpen: () -> Void = {}
+    var onToggle: () -> Void = {}
     var onEdit: () -> Void
-    var onLongPress: (() -> Void)? = nil
 
-    private var backgroundColor: Color {
-        if let colorHex = category.color {
-            return Color(hex: colorHex).opacity(0.15)
-        }
-        return Theme.Colors.primary.opacity(0.15)
-    }
-
-    private var iconBackgroundColor: Color {
-        if let colorHex = category.color {
-            return Color(hex: colorHex)
-        }
-        return Theme.Colors.primary
+    private var tintColor: Color {
+        if let hex = category.color { return Color(hex: hex) }
+        return AF.Color.accent
     }
 
     var body: some View {
-        HStack(spacing: Theme.Spacing.md) {
-            // Icon
-            ZStack {
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.md)
-                    .fill(iconBackgroundColor)
-                    .frame(width: 48, height: 48)
+        HStack(spacing: AF.Space.m) {
+            HStack(spacing: AF.Space.m) {
+                FrostCapsule(emoji: category.icon ?? "📦", tint: tintColor)
 
-                Text(category.icon ?? "📦")
-                    .font(.system(size: 24))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(category.name)
+                        .font(AF.Typography.headline)
+                        .foregroundStyle(AF.Color.textPrimary)
+                    Text("\(itemCount) \(itemsWord)")
+                        .font(AF.Typography.footnote)
+                        .foregroundStyle(AF.Color.textTertiary)
+                }
+                Spacer(minLength: 0)
             }
+            .contentShape(Rectangle())
+            .onTapGesture { onOpen() }
 
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(category.name)
-                    .font(Theme.Typography.body)
-                    .foregroundColor(Theme.Colors.textPrimary)
-
-                Text("\(category.itemCount) \(itemsWord)")
-                    .font(Theme.Typography.subheadline)
-                    .foregroundColor(Theme.Colors.textSecondary)
-            }
-
-            Spacer()
-
-            // Expand/Collapse Indicator
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Theme.Colors.textTertiary)
-                .frame(width: 20, height: 20)
-
-            // Edit Button
-            Button {
-                onEdit()
-            } label: {
+            Button(action: onEdit) {
                 Image(systemName: "pencil")
-                    .font(.system(size: 16))
-                    .foregroundColor(Theme.Colors.primary)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.Colors.background.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(AF.Color.accent)
+                    .frame(width: 30, height: 30)
+                    .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
-            .buttonStyle(.borderless)
-        }
-        .padding(Theme.Spacing.lg)
-        .background(backgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
-        .onLongPressGesture(minimumDuration: 2.0) {
-            onLongPress?()
+            .buttonStyle(.plain)
+
+            Button(action: onToggle) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
         }
     }
 
     private var itemsWord: String {
-        let count = category.itemCount
-        if count % 10 == 1 && count % 100 != 11 { return "заготовка" }
-        if [2, 3, 4].contains(count % 10) && ![12, 13, 14].contains(count % 100) { return "заготовки" }
-        return "заготовок"
+        russianPlural(itemCount, one: "заготовка", few: "заготовки", many: "заготовок")
     }
 }
 
 #Preview {
-    VStack(spacing: 16) {
-        CategoryCard(
-            category: Category(name: "Овощи", icon: "🥬", color: "#34C759", itemCount: 12),
-            onEdit: {}
-        )
-        CategoryCard(
-            category: Category(name: "Мясо", icon: "🍖", color: "#FF3B30", itemCount: 8),
-            onEdit: {}
-        )
+    ZStack {
+        ArcticBackdrop()
+        VStack(spacing: 16) {
+            CategoryCard(category: Category(name: "Овощи", icon: "🥬", color: "#0E9E8E", itemCount: 12),
+                         itemCount: 12, onEdit: {})
+                .padding(AF.Space.m)
+                .afCard()
+            CategoryCard(category: Category(name: "Мясо", icon: "🍖", color: "#E08ABF", itemCount: 8),
+                         itemCount: 8, isExpanded: true, onEdit: {})
+                .padding(AF.Space.m)
+                .afCard()
+        }
+        .padding()
     }
-    .padding()
-    .background(Theme.Colors.background)
 }

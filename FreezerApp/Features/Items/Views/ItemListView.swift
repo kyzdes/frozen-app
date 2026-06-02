@@ -2,10 +2,12 @@ import SwiftUI
 
 struct ItemListView: View {
     @EnvironmentObject var repository: DataRepository
+    @Environment(\.dismiss) private var dismiss
     @State private var showingAddItem = false
     @State private var editingItem: Item?
     @State private var searchQuery = ""
     @State private var selectedShelf: Int?
+    @FocusState private var searchFocused: Bool
 
     let category: Category
 
@@ -27,118 +29,87 @@ struct ItemListView: View {
         }
     }
 
+    private var tintColor: Color {
+        if let hex = category.color { return Color(hex: hex) }
+        return AF.Color.accent
+    }
+
     var body: some View {
         ZStack {
-            Theme.Colors.background
-                .ignoresSafeArea()
+            ArcticBackdrop()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(category.name)
-                            .font(Theme.Typography.largeTitle)
-                            .foregroundColor(Theme.Colors.textPrimary)
-
-                        Text("\(items.count) \(itemsWord)")
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.textSecondary)
-                    }
-                    .padding(.horizontal, Theme.Spacing.lg)
-
-                    // Search Bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(Theme.Colors.textSecondary)
-
-                        TextField("Поиск по названию или заметкам", text: $searchQuery)
-                            .font(Theme.Typography.body)
-
-                        if !searchQuery.isEmpty {
-                            Button {
-                                searchQuery = ""
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(Theme.Colors.textSecondary)
-                            }
-                        }
-                    }
-                    .padding(Theme.Spacing.md)
-                    .background(Theme.Colors.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
-                    .padding(.horizontal, Theme.Spacing.lg)
-
-                    // Shelf Filter
+            List {
+                Section {
+                    detailHeader
+                        .listRowInsets(EdgeInsets(top: 4, leading: AF.Space.l, bottom: 4, trailing: AF.Space.l))
+                    searchBar
+                        .listRowInsets(EdgeInsets(top: 6, leading: AF.Space.l, bottom: 4, trailing: AF.Space.l))
                     if uniqueShelves.count > 1 {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: Theme.Spacing.sm) {
-                                FilterChip(
-                                    title: "Все полки",
-                                    isSelected: selectedShelf == nil
-                                ) {
-                                    selectedShelf = nil
-                                }
-
-                                ForEach(uniqueShelves, id: \.self) { shelf in
-                                    FilterChip(
-                                        title: "Полка \(shelf)",
-                                        isSelected: selectedShelf == shelf
-                                    ) {
-                                        selectedShelf = shelf
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, Theme.Spacing.lg)
-                        }
-                    }
-
-                    // Items List
-                    if filteredItems.isEmpty {
-                        emptyStateView
-                    } else {
-                        LazyVStack(spacing: Theme.Spacing.sm) {
-                            ForEach(filteredItems) { item in
-                                ItemRow(
-                                    item: item,
-                                    onEdit: { editingItem = item },
-                                    onDelete: { repository.deleteItem(item.id) },
-                                    onUpdatePackagesCount: { delta in
-                                        repository.updateItemPackagesCount(item.id, delta: delta)
-                                    },
-                                    onUpdateItemsCount: { delta in
-                                        repository.updateItemItemsCount(item.id, delta: delta)
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, Theme.Spacing.lg)
+                        shelfChips
+                            .listRowInsets(EdgeInsets(top: 2, leading: AF.Space.l, bottom: 4, trailing: AF.Space.l))
                     }
                 }
-                .padding(.bottom, 100)
-            }
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
 
-            // Add Button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button {
-                        showingAddItem = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Theme.Colors.primary)
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                Section {
+                    if filteredItems.isEmpty {
+                        emptyStateView
+                            .listRowInsets(EdgeInsets(top: 40, leading: AF.Space.l, bottom: 0, trailing: AF.Space.l))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(filteredItems) { item in
+                            ItemRow(
+                                item: item,
+                                onEdit: { editingItem = item },
+                                onDelete: { withAnimation { repository.deleteItem(item.id) } },
+                                onUpdatePackagesCount: { repository.updateItemPackagesCount(item.id, delta: $0) },
+                                onUpdateItemsCount: { repository.updateItemItemsCount(item.id, delta: $0) }
+                            )
+                            .listRowInsets(EdgeInsets(top: 6, leading: AF.Space.l, bottom: 6, trailing: AF.Space.l))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    withAnimation { repository.deleteItem(item.id) }
+                                } label: {
+                                    Label("Удалить", systemImage: "trash")
+                                }
+                                Button {
+                                    editingItem = item
+                                } label: {
+                                    Label("Изменить", systemImage: "pencil")
+                                }
+                                .tint(AF.Color.accent)
+                            }
+                        }
                     }
-                    .padding(.trailing, Theme.Spacing.lg)
-                    .padding(.bottom, Theme.Spacing.xl)
+
+                    Color.clear.frame(height: 64)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+
+            floatingAddButton
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { dismiss() } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                        Text("Группы")
+                    }
+                    .foregroundStyle(AF.Color.accent)
                 }
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingAddItem) {
             ItemFormView(item: nil, categoryId: category.id)
         }
@@ -147,44 +118,110 @@ struct ItemListView: View {
         }
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: Theme.Spacing.lg) {
-            Image(systemName: items.isEmpty ? "plus.circle" : "magnifyingglass")
-                .font(.system(size: 64))
-                .foregroundColor(Theme.Colors.textTertiary)
+    // MARK: - Subviews
 
-            Text(items.isEmpty ? "Нет заготовок" : "Ничего не найдено")
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.textSecondary)
-
-            Text(items.isEmpty ? "Нажмите +, чтобы добавить первую заготовку" : "Попробуйте изменить запрос")
-                .font(Theme.Typography.subheadline)
-                .foregroundColor(Theme.Colors.textTertiary)
+    private var detailHeader: some View {
+        HStack(spacing: AF.Space.m) {
+            FrostCapsule(emoji: category.icon ?? "📦", tint: tintColor, size: 64)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(category.name)
+                    .font(AF.Typography.title3.weight(.bold))
+                    .foregroundStyle(AF.Color.textPrimary)
+                Text("\(items.count) \(itemsWord)")
+                    .font(AF.Typography.subheadline)
+                    .foregroundStyle(AF.Color.textTertiary)
+            }
+            Spacer()
         }
-        .padding(.top, 64)
-        .padding(.horizontal, Theme.Spacing.lg)
+        .padding(.top, 4)
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 16))
+                .foregroundStyle(AF.Color.textTertiary)
+            TextField("Поиск по заготовкам", text: $searchQuery)
+                .font(AF.Typography.callout)
+                .foregroundStyle(AF.Color.textPrimary)
+                .focused($searchFocused)
+            if !searchQuery.isEmpty {
+                Button {
+                    searchQuery = ""
+                    searchFocused = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(AF.Color.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, AF.Space.m)
+        .frame(height: 38)
+        .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: AF.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AF.Radius.control, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
+    }
+
+    private var shelfChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AF.Space.s) {
+                AFChip(title: "Все полки", isActive: selectedShelf == nil) { selectedShelf = nil }
+                ForEach(uniqueShelves, id: \.self) { shelf in
+                    AFChip(title: "Полка \(shelf)", isActive: selectedShelf == shelf) {
+                        selectedShelf = (selectedShelf == shelf) ? nil : shelf
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: AF.Space.m) {
+            Text("🧊")
+                .font(.system(size: 30))
+                .frame(width: 64, height: 64)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
+            Text(items.isEmpty ? "В группе пока нет заготовок" : "Ничего не найдено")
+                .font(AF.Typography.body)
+                .foregroundStyle(AF.Color.textSecondary)
+            Text(items.isEmpty ? "Нажмите +, чтобы добавить первую заготовку" : "Попробуйте изменить запрос")
+                .font(AF.Typography.subheadline)
+                .foregroundStyle(AF.Color.textTertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var floatingAddButton: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showingAddItem = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(AF.Color.onAccent)
+                        .frame(width: 56, height: 56)
+                        .background(AF.accentGradient, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .strokeBorder(.white.opacity(0.45), lineWidth: 0.5).blendMode(.plusLighter)
+                        )
+                        .shadow(color: AF.Color.accent.opacity(0.5), radius: 16, x: 0, y: 10)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, AF.Space.l)
+                .padding(.bottom, AF.Space.l)
+            }
+        }
     }
 
     private var itemsWord: String {
         russianPlural(items.count, one: "заготовка", few: "заготовки", many: "заготовок")
-    }
-}
-
-struct FilterChip: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(Theme.Typography.subheadline)
-                .foregroundColor(isSelected ? .white : Theme.Colors.textSecondary)
-                .padding(.horizontal, Theme.Spacing.lg)
-                .padding(.vertical, Theme.Spacing.sm)
-                .background(isSelected ? Theme.Colors.primary : Theme.Colors.cardBackground)
-                .clipShape(Capsule())
-        }
     }
 }
 

@@ -5,361 +5,310 @@ struct CategoryListView: View {
     @EnvironmentObject var repository: DataRepository
     @State private var showingAddCategory = false
     @State private var editingCategory: Category?
-    @State private var editingItem: Item?
-    @State private var editMode: EditMode = .inactive
     @State private var expandedCategories: Set<String> = []
-    @State private var showingSettings = false
-    @State private var showingHistory = false
     @State private var searchQuery = ""
     @State private var selectedShelf: Int?
+    @State private var navCategory: Category?
     @FocusState private var searchFocused: Bool
-    @AppStorage("appearanceMode") private var appearanceMode: String = "Системная"
     private let expansionAnimation = Animation.spring(response: 0.32, dampingFraction: 0.85, blendDuration: 0.12)
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Theme.Colors.background
-                    .ignoresSafeArea()
+        ZStack {
+            ArcticBackdrop()
 
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: Theme.Spacing.md) {
-                        header
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: AF.Space.m) {
+                    header
+                    toolbar
+                    if !uniqueShelves.isEmpty { shelfChips }
 
-                        if repository.categories.isEmpty {
-                            emptyStateView
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, Theme.Spacing.lg)
-                        } else {
-                            ForEach(filteredCategories) { category in
-                                categoryBlock(for: category)
-                                    .padding(.horizontal, Theme.Spacing.lg)
-                            }
+                    if repository.categories.isEmpty {
+                        emptyStateView
+                    } else {
+                        ForEach(filteredCategories) { category in
+                            categoryBlock(for: category)
                         }
                     }
                 }
-                .onTapGesture {
-                    searchFocused = false
-                }
+                .padding(.horizontal, AF.Space.l)
+                .padding(.top, AF.Space.s)
+                .padding(.bottom, 96)
             }
-            .navigationDestination(for: Category.self) { category in
-                ItemListView(category: category)
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Button {
-                        showingHistory = true
-                    } label: {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.title2)
-                            .imageScale(.large)
-                    }
+            .scrollDismissesKeyboard(.interactively)
 
-                    Spacer(minLength: Theme.Spacing.md)
-
-                    Button {
-                        showingSettings = true
-                    } label: {
-                        Image(systemName: "gear")
-                            .font(.title2)
-                            .imageScale(.large)
-                    }
-
-                    Spacer(minLength: Theme.Spacing.md)
-
-                    searchBar
-
-                    Spacer(minLength: Theme.Spacing.md)
-
-                    Button {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        showingAddCategory = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .imageScale(.large)
-                    }
-                    .tint(Theme.Colors.primary)
-                }
-            }
-            .sheet(isPresented: $showingAddCategory) {
-                CategoryFormView(category: nil)
-            }
-            .sheet(item: $editingCategory) { category in
-                CategoryFormView(category: category)
-            }
-            .sheet(item: $editingItem) { item in
-                ItemFormView(item: item, categoryId: item.categoryId)
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-                    .environmentObject(repository)
-            }
-            .preferredColorScheme(selectedColorScheme)
-            .navigationDestination(isPresented: $showingHistory) {
-                HistoryView(history: repository.history)
-            }
+            floatingAddButton
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $navCategory) { category in
+            ItemListView(category: category)
+        }
+        .sheet(isPresented: $showingAddCategory) {
+            CategoryFormView(category: nil)
+        }
+        .sheet(item: $editingCategory) { category in
+            CategoryFormView(category: category)
         }
     }
 
-    private var selectedColorScheme: ColorScheme? {
-        switch appearanceMode {
-        case "Светлая": return .light
-        case "Темная": return .dark
-        default: return nil // System
-        }
-    }
+    // MARK: - Derived
 
     private var totalItems: Int {
-        repository.categories.reduce(0) { $0 + $1.itemCount }
+        repository.categories.reduce(0) { $0 + repository.getItems(for: $1.id).count }
     }
 
     private var itemsWord: String {
-        russianPlural(totalItems, one: LKS("заготовка"), few: LKS("заготовки"), many: LKS("заготовок"))
+        russianPlural(totalItems, one: "заготовка", few: "заготовки", many: "заготовок")
     }
 
     private var categoriesWord: String {
-        russianPlural(repository.categories.count, one: LKS("категории"), few: LKS("категориях"), many: LKS("категориях"))
+        russianPlural(repository.categories.count, one: "группа", few: "группы", many: "групп")
     }
 
-    // MARK: - Search & Filter
-
-    private var allItems: [Item] {
-        repository.items
+    private var allExpanded: Bool {
+        !repository.categories.isEmpty && expandedCategories.count == repository.categories.count
     }
+
+    private var allItems: [Item] { repository.items }
 
     private var uniqueShelves: [Int] {
         Array(Set(allItems.map { $0.shelfNumber })).sorted()
     }
 
-    private var filteredItems: [Item] {
-        allItems.filter { item in
-            let matchesSearch = searchQuery.isEmpty ||
-                item.name.localizedCaseInsensitiveContains(searchQuery) ||
-                (item.notes?.localizedCaseInsensitiveContains(searchQuery) ?? false)
-            let matchesShelf = selectedShelf == nil || item.shelfNumber == selectedShelf
-            return matchesSearch && matchesShelf
-        }
+    private func matches(_ item: Item) -> Bool {
+        let okQuery = searchQuery.isEmpty ||
+            item.name.localizedCaseInsensitiveContains(searchQuery) ||
+            (item.notes?.localizedCaseInsensitiveContains(searchQuery) ?? false)
+        let okShelf = selectedShelf == nil || item.shelfNumber == selectedShelf
+        return okQuery && okShelf
     }
 
     private var filteredCategories: [Category] {
-        if searchQuery.isEmpty && selectedShelf == nil {
-            return repository.categories
-        }
-
-        let categoryIds = Set(filteredItems.map { $0.categoryId })
+        if searchQuery.isEmpty && selectedShelf == nil { return repository.categories }
+        let categoryIds = Set(allItems.filter { matches($0) }.map { $0.categoryId })
         return repository.categories.filter { category in
-            categoryIds.contains(category.id) ||
-            category.name.localizedCaseInsensitiveContains(searchQuery)
+            categoryIds.contains(category.id) || category.name.localizedCaseInsensitiveContains(searchQuery)
         }
     }
 
-    // MARK: - Subviews
-
-    private var searchBar: some View {
-        HStack(spacing: Theme.Spacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(Theme.Colors.textSecondary)
-
-            TextField("Поиск", text: $searchQuery)
-                .font(Theme.Typography.body)
-                .focused($searchFocused)
-
-            if !searchQuery.isEmpty {
-                Button {
-                    searchQuery = ""
-                    searchFocused = false
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(Theme.Colors.textSecondary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, Theme.Spacing.md)
-        .padding(.vertical, Theme.Spacing.sm)
-                .background(Theme.Colors.cardBackground)
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Theme.Colors.textTertiary.opacity(0.6), lineWidth: 0.5)
-                )
-    }
+    // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-            HStack {
-                // Логотип
-                HStack(spacing: Theme.Spacing.sm) {
-                    Image(systemName: "snowflake")
-                        .font(.system(size: 30, weight: .semibold))
-                        .foregroundColor(Theme.Colors.primary)
-                    Text("FreezerApp")
-                        .font(Theme.Typography.title)
-                        .foregroundColor(Theme.Colors.textPrimary)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                HStack(spacing: 8) {
+                    Text("❄️")
+                        .font(.system(size: 28))
+                        .shadow(color: AF.Color.accentSoft, radius: 6, x: 0, y: 2)
+                    Text("Морозилка")
+                        .font(AF.Typography.largeTitle)
+                        .foregroundStyle(AF.Color.textPrimary)
                 }
-
                 Spacer()
-
-                Button {
-                    withAnimation(expansionAnimation) {
-                        if expandedCategories.count == repository.categories.count {
-                            expandedCategories.removeAll()
-                        } else {
-                            expandedCategories = Set(repository.categories.map { $0.id })
+                if !repository.categories.isEmpty {
+                    Button {
+                        withAnimation(expansionAnimation) {
+                            expandedCategories = allExpanded ? [] : Set(repository.categories.map { $0.id })
                         }
+                    } label: {
+                        Text(allExpanded ? "Свернуть" : "Развернуть")
+                            .font(AF.Typography.callout)
+                            .foregroundStyle(AF.Color.accent)
                     }
-                } label: {
-                    HStack(spacing: Theme.Spacing.xs) {
-                        Image(systemName: expandedCategories.count == repository.categories.count ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(expandedCategories.count == repository.categories.count ? LK("Свернуть все") : LK("Развернуть все"))
-                            .font(Theme.Typography.subheadline)
-                    }
-                    .padding(.horizontal, Theme.Spacing.md)
-                    .padding(.vertical, Theme.Spacing.sm)
-                    .background(Theme.Colors.cardBackground)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Theme.Colors.textTertiary.opacity(0.6), lineWidth: 0.5)
-                    )
                 }
             }
 
-            Text("\(totalItems) \(itemsWord) в \(repository.categories.count) \(categoriesWord)")
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.textSecondary)
+            Text("\(totalItems) \(itemsWord) · \(repository.categories.count) \(categoriesWord)")
+                .font(AF.Typography.subheadline)
+                .foregroundStyle(AF.Color.textSecondary)
         }
-        .padding(.horizontal, Theme.Spacing.lg)
-        .padding(.top, Theme.Spacing.sm)
+        .padding(.top, 4)
+        .padding(.bottom, 6)
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: Theme.Spacing.lg) {
-            Image(systemName: "snowflake")
-                .font(.system(size: 64))
-                .foregroundColor(Theme.Colors.textTertiary)
-
-            Text(LK("Нет категорий"))
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.textSecondary)
-
-            Text(LK("Нажмите +, чтобы создать первую категорию"))
-                .font(Theme.Typography.subheadline)
-                .foregroundColor(Theme.Colors.textTertiary)
+    private var toolbar: some View {
+        HStack(spacing: AF.Space.s) {
+            HStack(spacing: 7) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 16))
+                    .foregroundStyle(AF.Color.textTertiary)
+                TextField("Поиск по заготовкам", text: $searchQuery)
+                    .font(AF.Typography.callout)
+                    .foregroundStyle(AF.Color.textPrimary)
+                    .focused($searchFocused)
+                if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                        searchFocused = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(AF.Color.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, AF.Space.m)
+            .frame(height: 38)
+            .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: AF.Radius.control, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AF.Radius.control, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
 
             Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 showingAddCategory = true
             } label: {
-                Label(LK("Добавить категорию"), systemImage: "plus.circle.fill")
-                    .font(Theme.Typography.callout)
-                    .padding(.horizontal, Theme.Spacing.lg)
-                    .padding(.vertical, Theme.Spacing.sm)
-                    .background(Theme.Colors.primary.opacity(0.12))
-                    .clipShape(Capsule())
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(AF.Color.accent)
+                    .frame(width: 38, height: 38)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: AF.Radius.control, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AF.Radius.control, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
             }
+            .buttonStyle(.plain)
         }
-        .padding(.top, 64)
     }
+
+    private var shelfChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AF.Space.s) {
+                AFChip(title: "Все полки", systemImage: "line.3.horizontal.decrease", isActive: selectedShelf == nil) {
+                    selectedShelf = nil
+                }
+                ForEach(uniqueShelves, id: \.self) { shelf in
+                    AFChip(title: "Полка \(shelf)", isActive: selectedShelf == shelf) {
+                        selectedShelf = (selectedShelf == shelf) ? nil : shelf
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+        .padding(.bottom, 2)
+    }
+
+    // MARK: - Category block
 
     @ViewBuilder
     private func categoryBlock(for category: Category) -> some View {
         let isExpanded = expandedCategories.contains(category.id)
-        let expandedBinding = Binding(
-            get: { expandedCategories.contains(category.id) },
-            set: { newValue in
-                withAnimation(expansionAnimation) {
-                    if newValue {
-                        expandedCategories.insert(category.id)
-                    } else {
-                        expandedCategories.remove(category.id)
-                    }
-                }
-            }
-        )
+        let preview = repository.getItems(for: category.id).filter { matches($0) }
 
-        DisclosureGroup(isExpanded: expandedBinding) {
-            let items = repository.getItems(for: category.id)
-
-            VStack(spacing: Theme.Spacing.sm) {
-                if !items.isEmpty {
-                    ForEach(items) { item in
-                        ItemRow(
-                            item: item,
-                            onEdit: { editingItem = item },
-                            onDelete: { repository.deleteItem(item.id) },
-                            onUpdatePackagesCount: { delta in
-                                repository.updateItemPackagesCount(item.id, delta: delta)
-                            },
-                            onUpdateItemsCount: { delta in
-                                repository.updateItemItemsCount(item.id, delta: delta)
-                            }
-                        )
-                    }
-                }
-
-                NavigationLink(value: category) {
-                    HStack {
-                        Spacer()
-                        Text(items.isEmpty ? LK("Добавить +") : LK("Открыть полный список"))
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.primary)
-                        if !items.isEmpty {
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Theme.Colors.primary)
-                        }
-                        Spacer()
-                    }
-                    .padding(.vertical, Theme.Spacing.md)
-                }
-            }
-            .padding(.top, Theme.Spacing.md)
-            .animation(expansionAnimation, value: expandedCategories)
-        } label: {
+        VStack(spacing: 0) {
             CategoryCard(
                 category: category,
+                itemCount: repository.getItems(for: category.id).count,
                 isExpanded: isExpanded,
-                onEdit: { editingCategory = category },
-                onLongPress: {
-                    let impact = UIImpactFeedbackGenerator(style: .medium)
-                    impact.impactOccurred()
-                    withAnimation {
-                        editMode = .active
+                onOpen: { navCategory = category },
+                onToggle: {
+                    withAnimation(expansionAnimation) {
+                        if isExpanded { expandedCategories.remove(category.id) }
+                        else { expandedCategories.insert(category.id) }
+                    }
+                },
+                onEdit: { editingCategory = category }
+            )
+
+            if isExpanded {
+                VStack(spacing: 2) {
+                    Divider().overlay(AF.Color.hairline).padding(.vertical, 4)
+
+                    if preview.isEmpty {
+                        Text("В группе пока нет заготовок")
+                            .font(AF.Typography.footnote)
+                            .foregroundStyle(AF.Color.textTertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                    } else {
+                        ForEach(preview.prefix(4)) { item in
+                            Button { navCategory = category } label: {
+                                HStack {
+                                    Text(item.name)
+                                        .font(AF.Typography.callout)
+                                        .foregroundStyle(AF.Color.textPrimary)
+                                    Spacer()
+                                    FreshnessBadge(daysLeft: item.daysUntilExpiration, style: .short)
+                                }
+                                .padding(.vertical, 9)
+                                .padding(.horizontal, 8)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Button { navCategory = category } label: {
+                            HStack(spacing: 6) {
+                                Text("Открыть полный список")
+                                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                            }
+                            .font(AF.Typography.subheadline.weight(.semibold))
+                            .foregroundStyle(AF.Color.accent)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(AF.Color.accentSoft, in: RoundedRectangle(cornerRadius: AF.Radius.button, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
                     }
                 }
-            )
+            }
         }
-        .contentShape(Rectangle())
-        .animation(expansionAnimation, value: expandedCategories)
-        .disclosureGroupStyle(PlainDisclosureStyle(animation: expansionAnimation))
+        .padding(AF.Space.m)
+        .afCard()
     }
-}
 
-private struct PlainDisclosureStyle: DisclosureGroupStyle {
-    let animation: Animation
+    // MARK: - Empty + FAB
 
-    func makeBody(configuration: Configuration) -> some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation(animation) {
-                    configuration.isExpanded.toggle()
+    private var emptyStateView: some View {
+        VStack(spacing: AF.Space.m) {
+            Text("🧊")
+                .font(.system(size: 30))
+                .frame(width: 64, height: 64)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
+
+            Text("Пока нет групп")
+                .font(AF.Typography.body)
+                .foregroundStyle(AF.Color.textSecondary)
+            Text("Нажмите +, чтобы создать первую группу")
+                .font(AF.Typography.subheadline)
+                .foregroundStyle(AF.Color.textTertiary)
+                .multilineTextAlignment(.center)
+
+            Button("Новая группа") { showingAddCategory = true }
+                .buttonStyle(AFTintedButtonStyle(fullWidth: false))
+                .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 64)
+    }
+
+    private var floatingAddButton: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showingAddCategory = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(AF.Color.onAccent)
+                        .frame(width: 56, height: 56)
+                        .background(AF.accentGradient, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .strokeBorder(.white.opacity(0.45), lineWidth: 0.5).blendMode(.plusLighter)
+                        )
+                        .shadow(color: AF.Color.accent.opacity(0.5), radius: 16, x: 0, y: 10)
                 }
-            } label: {
-                configuration.label
-            }
-            .buttonStyle(.plain)
-
-            if configuration.isExpanded {
-                configuration.content
+                .buttonStyle(.plain)
+                .padding(.trailing, AF.Space.l)
+                .padding(.bottom, AF.Space.l)
             }
         }
     }
 }
-
 
 #Preview {
-    CategoryListView()
-        .environmentObject(DataRepository())
+    NavigationStack {
+        CategoryListView()
+            .environmentObject(DataRepository())
+    }
 }

@@ -15,152 +15,141 @@ struct CategoryFormView: View {
         self.category = category
         _name = State(initialValue: category?.name ?? "")
         _selectedIcon = State(initialValue: category?.icon ?? "🥬")
-        _selectedColor = State(initialValue: category?.color ?? "#34C759")
+        _selectedColor = State(initialValue: category?.color ?? Theme.presetColors[0])
     }
+
+    private let iconColumns = Array(repeating: GridItem(.flexible(), spacing: AF.Space.s), count: 6)
+    private let colorColumns = Array(repeating: GridItem(.flexible(), spacing: AF.Space.m), count: 8)
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Theme.Colors.background
-                    .ignoresSafeArea()
+                ArcticBackdrop()
 
                 ScrollView {
-                    VStack(spacing: Theme.Spacing.xl) {
-                        // Name Input
-                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("НАЗВАНИЕ")
-                                .font(Theme.Typography.footnote)
-                                .foregroundColor(Theme.Colors.textSecondary)
+                    VStack(spacing: AF.Space.xl) {
+                        previewCard
 
-                            TextField("Название группы", text: $name)
-                                .font(Theme.Typography.body)
-                                .padding(Theme.Spacing.md)
-                                .background(Theme.Colors.cardBackground)
-                                .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
-                        }
-
-                        // Icon Selector
-                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("ИКОНКА")
-                                .font(Theme.Typography.footnote)
-                                .foregroundColor(Theme.Colors.textSecondary)
-
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: Theme.Spacing.sm) {
-                                ForEach(Theme.presetIcons, id: \.self) { icon in
-                                    Button {
-                                        selectedIcon = icon
-                                    } label: {
-                                        Text(icon)
-                                            .font(.system(size: 32))
-                                            .frame(maxWidth: .infinity)
-                                            .aspectRatio(1, contentMode: .fill)
-                                            .background(selectedIcon == icon ? Theme.Colors.primary : Theme.Colors.cardBackground)
-                                            .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
-                                    }
-                                }
+                        VStack(spacing: 0) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Название группы")
+                                    .font(AF.Typography.callout)
+                                    .foregroundStyle(AF.Color.textSecondary)
+                                TextField("Например: Овощи", text: $name)
+                                    .font(AF.Typography.body)
+                                    .foregroundStyle(AF.Color.textPrimary)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, AF.Space.l)
+                            .padding(.vertical, AF.Space.m)
                         }
+                        .afGroup()
 
-                        // Color Selector
-                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("ЦВЕТ")
-                                .font(Theme.Typography.footnote)
-                                .foregroundColor(Theme.Colors.textSecondary)
-
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: Theme.Spacing.sm) {
-                                ForEach(Theme.presetColors, id: \.self) { colorHex in
-                                    Button {
-                                        selectedColor = colorHex
-                                    } label: {
-                                        Color(hex: colorHex)
+                        // Icon
+                        VStack(alignment: .leading, spacing: AF.Space.s) {
+                            AFSectionTitle(text: "Иконка")
+                            LazyVGrid(columns: iconColumns, spacing: AF.Space.s) {
+                                ForEach(Theme.presetIcons, id: \.self) { icon in
+                                    Button { selectedIcon = icon } label: {
+                                        Text(icon)
+                                            .font(.system(size: 23))
                                             .frame(maxWidth: .infinity)
-                                            .aspectRatio(1, contentMode: .fill)
-                                            .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                                    .fill(selectedIcon == icon ? AF.Color.accentSoft : AF.Color.fillTertiary)
+                                            )
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: Theme.CornerRadius.md)
-                                                    .stroke(Theme.Colors.primary, lineWidth: selectedColor == colorHex ? 3 : 0)
+                                                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                                    .strokeBorder(AF.Color.accent, lineWidth: selectedIcon == icon ? 1.5 : 0)
                                             )
                                     }
+                                    .buttonStyle(.plain)
                                 }
                             }
+                            .padding(AF.Space.l)
+                            .afGroup()
                         }
 
-                        // Preview
-                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text("ПРЕДПРОСМОТР")
-                                .font(Theme.Typography.footnote)
-                                .foregroundColor(Theme.Colors.textSecondary)
-
-                            HStack(spacing: Theme.Spacing.md) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: Theme.CornerRadius.md)
-                                        .fill(Color(hex: selectedColor))
-                                        .frame(width: 48, height: 48)
-
-                                    Text(selectedIcon)
-                                        .font(.system(size: 24))
-                                }
-
-                                Text(name.isEmpty ? "Название группы" : name)
-                                    .font(Theme.Typography.body)
-                                    .foregroundColor(Theme.Colors.textPrimary)
-
-                                Spacer()
-                            }
-                            .padding(Theme.Spacing.lg)
-                            .background(Color(hex: selectedColor).opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
-                        }
-
-                        // Delete Button (only for editing)
-                        if category != nil {
-                            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                                Button {
-                                    showingDeleteConfirmation = true
-                                } label: {
-                                    HStack {
-                                        Spacer()
-                                        Text("Удалить группу")
-                                            .font(Theme.Typography.body)
-                                            .foregroundColor(.white)
-                                        Spacer()
+                        // Color
+                        VStack(alignment: .leading, spacing: AF.Space.s) {
+                            AFSectionTitle(text: "Цвет")
+                            LazyVGrid(columns: colorColumns, spacing: AF.Space.m) {
+                                ForEach(Theme.presetColors, id: \.self) { colorHex in
+                                    Button { selectedColor = colorHex } label: {
+                                        Circle()
+                                            .fill(Color(hex: colorHex))
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .overlay(
+                                                Circle().strokeBorder(.white.opacity(0.5), lineWidth: 1).blendMode(.plusLighter)
+                                            )
+                                            .overlay {
+                                                if selectedColor == colorHex {
+                                                    Circle()
+                                                        .strokeBorder(AF.Color.accent, lineWidth: 2)
+                                                        .padding(-4)
+                                                }
+                                            }
+                                            .shadow(color: Color(hex: colorHex).opacity(0.4), radius: 4, y: 2)
                                     }
-                                    .padding(Theme.Spacing.md)
-                                    .background(Theme.Colors.error)
-                                    .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.md))
+                                    .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.top, Theme.Spacing.xl)
+                            .padding(AF.Space.l)
+                            .afGroup()
+                        }
+
+                        if category != nil {
+                            Button {
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Label("Удалить группу", systemImage: "trash")
+                            }
+                            .buttonStyle(AFTintedButtonStyle(role: .danger))
                         }
                     }
-                    .padding(Theme.Spacing.lg)
+                    .padding(.horizontal, AF.Space.l)
+                    .padding(.vertical, AF.Space.l)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle(category == nil ? "Новая группа" : "Редактировать")
+            .navigationTitle(category == nil ? "Новая группа" : "Редактировать группу")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
-
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(category == nil ? "Добавить" : "Сохранить") {
-                        saveCategory()
-                    }
-                    .disabled(name.isEmpty)
+                    Button("Сохранить") { saveCategory() }
+                        .fontWeight(.semibold)
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .alert("Удалить группу?", isPresented: $showingDeleteConfirmation) {
                 Button("Отмена", role: .cancel) { }
-                Button("Удалить", role: .destructive) {
-                    deleteCategory()
-                }
+                Button("Удалить", role: .destructive) { deleteCategory() }
             } message: {
                 Text("Все заготовки в этой группе также будут удалены. Это действие нельзя отменить.")
             }
         }
+    }
+
+    private var previewCard: some View {
+        HStack(spacing: AF.Space.m) {
+            FrostCapsule(emoji: selectedIcon, tint: Color(hex: selectedColor), size: 64)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name.isEmpty ? "Название группы" : name)
+                    .font(AF.Typography.headline)
+                    .foregroundStyle(name.isEmpty ? AF.Color.textTertiary : AF.Color.textPrimary)
+                Text("Предпросмотр")
+                    .font(AF.Typography.footnote)
+                    .foregroundStyle(AF.Color.textTertiary)
+            }
+            Spacer()
+        }
+        .padding(AF.Space.m)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: AF.Radius.card, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AF.Radius.card, style: .continuous).strokeBorder(AF.Color.frostBorder, lineWidth: 0.5))
     }
 
     private func deleteCategory() {
@@ -177,11 +166,7 @@ struct CategoryFormView: View {
             updated.color = selectedColor
             repository.updateCategory(updated)
         } else {
-            let newCategory = Category(
-                name: name,
-                icon: selectedIcon,
-                color: selectedColor
-            )
+            let newCategory = Category(name: name, icon: selectedIcon, color: selectedColor)
             repository.addCategory(newCategory)
         }
         dismiss()

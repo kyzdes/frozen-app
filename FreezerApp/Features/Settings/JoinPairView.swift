@@ -12,46 +12,31 @@ struct JoinPairView: View {
     @State private var importMode: String = "replace"
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [
-                        Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.3)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                ArcticBackdrop()
 
                 ScrollView {
-                    VStack(spacing: 32) {
+                    VStack(spacing: AF.Space.xxl) {
                         if let success = successMessage {
-                            // Success state
                             successSection(message: success)
                         } else {
-                            // Input state
                             joinPairSection
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 32)
+                    .padding(.horizontal, AF.Space.xxl)
+                    .padding(.vertical, AF.Space.xxl)
                 }
             }
-            .navigationTitle("Подключиться")
+            .navigationTitle("Подключиться по коду")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
             }
             .alert("Внимание", isPresented: $showWarning) {
-                Button("Отмена", role: .cancel) {
-                    showWarning = false
-                }
+                Button("Отмена", role: .cancel) { showWarning = false }
                 Button("Продолжить", role: .destructive) {
                     showWarning = false
                     performJoin()
@@ -62,310 +47,162 @@ struct JoinPairView: View {
                      : "Ваши личные данные будут перенесены в общий холодильник без дедупликации.")
             }
             .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") {
-                    errorMessage = nil
-                }
+                Button("OK") { errorMessage = nil }
             } message: {
-                if let error = errorMessage {
-                    Text(error)
-                }
+                if let error = errorMessage { Text(error) }
             }
         }
     }
 
-    // MARK: - Join Section
+    // MARK: - Join
+
     private var joinPairSection: some View {
-        VStack(spacing: 28) {
-            // Header icon
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 80, height: 80)
-
-                    Image(systemName: "link.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-
+        VStack(spacing: AF.Space.xxl) {
+            VStack(spacing: AF.Space.l) {
+                Image(systemName: "link.circle.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(AF.Color.accent)
+                    .frame(width: 84, height: 84)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(AF.Color.frostEdge, lineWidth: 0.5))
+                    .shadow(color: AF.Color.accent.opacity(0.35), radius: 14, y: 8)
                 VStack(spacing: 8) {
-                    Text("Присоединиться")
-                        .font(.title2)
-                        .fontWeight(.bold)
-
-                    Text("Введите код от партнера")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                    Text("Подключиться")
+                        .font(AF.Typography.title3.weight(.bold))
+                        .foregroundStyle(AF.Color.textPrimary)
+                    Text("Введите код от партнёра")
+                        .font(AF.Typography.subheadline)
+                        .foregroundStyle(AF.Color.textSecondary)
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, AF.Space.s)
 
-            // Code input card
-            VStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 16) {
+            VStack(spacing: AF.Space.l) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Код приглашения")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    TextField("", text: $inviteCode, prompt: Text("A3X7K9").foregroundColor(.secondary))
-                        .textFieldStyle(.plain)
+                        .font(AF.Typography.callout)
+                        .foregroundStyle(AF.Color.textSecondary)
+                    TextField("", text: $inviteCode, prompt: Text("A3X7K9").foregroundColor(AF.Color.textQuaternary))
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 30, weight: .bold, design: .monospaced))
                         .tracking(6)
                         .multilineTextAlignment(.center)
-                        .padding(20)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                        .foregroundStyle(AF.Color.accent)
                         .disabled(isJoining)
                         .onChange(of: inviteCode) { _, newValue in
                             inviteCode = String(newValue.uppercased().prefix(6))
                         }
-
-                    HStack(spacing: 6) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("Введите 6-значный код, полученный от партнера")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Импорт данных")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
-                        HStack(spacing: 10) {
-                            Button {
-                                importMode = "replace"
-                            } label: {
-                                Text("Replace")
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(importMode == "replace" ? Color.blue : Color(.systemGray5))
-                                    .foregroundColor(importMode == "replace" ? .white : .primary)
-                                    .cornerRadius(10)
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                importMode = "merge"
-                            } label: {
-                                Text("Merge")
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(importMode == "merge" ? Color.blue : Color(.systemGray5))
-                                    .foregroundColor(importMode == "merge" ? .white : .primary)
-                                    .cornerRadius(10)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
+                        .padding(.vertical, AF.Space.m)
+                        .frame(maxWidth: .infinity)
+                        .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: AF.Radius.field, style: .continuous))
                 }
-                .padding(20)
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
+
+                VStack(alignment: .leading, spacing: AF.Space.s) {
+                    AFSectionTitle(text: "При подключении").padding(.leading, 0)
+                    Picker("", selection: $importMode) {
+                        Text("Заменить мои данные").tag("replace")
+                        Text("Объединить").tag("merge")
+                    }
+                    .pickerStyle(.segmented)
+                }
             }
+            .padding(AF.Space.l)
+            .afGroup()
 
             // Info card
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: AF.Space.m) {
+                HStack(spacing: AF.Space.m) {
                     Image(systemName: "lightbulb.fill")
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.orange, Color.orange.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .foregroundStyle(AF.Color.soon)
                         .font(.title3)
-
-                    Text("Что произойдет?")
-                        .font(.headline)
+                    Text("Что произойдёт?")
+                        .font(AF.Typography.headline)
+                        .foregroundStyle(AF.Color.textPrimary)
                 }
-
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: AF.Space.m) {
                     InfoRow(icon: "arrow.triangle.2.circlepath", text: importMode == "replace"
                             ? "Личные данные будут заменены"
                             : "Личные данные добавятся в общий холодильник")
                     InfoRow(icon: "person.2.fill", text: "Изменения синхронизируются между устройствами")
                     InfoRow(icon: "clock.fill", text: "Автоматическая синхронизация каждые 5 секунд")
                 }
-                .font(.callout)
-                .foregroundColor(.secondary)
+                .font(AF.Typography.callout)
+                .foregroundStyle(AF.Color.textSecondary)
             }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(Color(.systemGray4), lineWidth: 1)
-            )
+            .padding(AF.Space.l)
+            .afGroup()
 
-            Spacer()
-
-            // Action button
             Button(action: { showWarning = true }) {
-                HStack(spacing: 12) {
-                    if isJoining {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Image(systemName: "link.circle.fill")
-                            .font(.title3)
-                        Text("Подключиться")
-                            .font(.headline)
-                    }
+                if isJoining {
+                    ProgressView().tint(AF.Color.onAccent)
+                } else {
+                    Label("Подключиться", systemImage: "link.circle.fill")
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
             }
-            .background(
-                LinearGradient(
-                    colors: inviteCode.count != 6 || isJoining ?
-                        [Color.gray, Color.gray] :
-                        [Color.blue, Color.blue.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(16)
-            .shadow(color: (inviteCode.count != 6 || isJoining ? Color.clear : Color.blue.opacity(0.3)), radius: 8, y: 4)
+            .buttonStyle(AFPrimaryButtonStyle())
             .disabled(inviteCode.count != 6 || isJoining)
-            .animation(.easeInOut(duration: 0.2), value: inviteCode.count)
+            .opacity(inviteCode.count != 6 ? 0.5 : 1)
         }
     }
 
-    // MARK: - Success Section
+    // MARK: - Success
+
     private func successSection(message: String) -> some View {
-        VStack(spacing: 32) {
-            Spacer()
-
-            VStack(spacing: 20) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.green.opacity(0.2), Color.green.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 120, height: 120)
-
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 70))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.green, Color.green.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-                .scaleEffect(1.0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.6), value: successMessage)
-
-                VStack(spacing: 12) {
-                    Text("Успешно подключено!")
-                        .font(.title)
-                        .fontWeight(.bold)
-
-                    Text(message)
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-
-                VStack(spacing: 12) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .foregroundColor(.green)
-                        Text("Синхронизация активна")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        Capsule()
-                            .fill(Color.green.opacity(0.1))
-                    )
-                }
+        VStack(spacing: AF.Space.xxl) {
+            Spacer(minLength: 40)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 70))
+                .foregroundStyle(AF.Color.fresh)
+            VStack(spacing: AF.Space.m) {
+                Text("Успешно подключено!")
+                    .font(AF.Typography.title2)
+                    .foregroundStyle(AF.Color.textPrimary)
+                Text(message)
+                    .font(AF.Typography.body)
+                    .foregroundStyle(AF.Color.textSecondary)
+                    .multilineTextAlignment(.center)
             }
-
-            Spacer()
-
-            Button(action: { dismiss() }) {
-                Text("Готово")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                Text("Синхронизация активна").fontWeight(.medium)
             }
-            .background(
-                LinearGradient(
-                    colors: [Color.green, Color.green.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(16)
-            .shadow(color: Color.green.opacity(0.3), radius: 8, y: 4)
+            .font(AF.Typography.subheadline)
+            .foregroundStyle(AF.Color.fresh)
+            .padding(.horizontal, AF.Space.l)
+            .padding(.vertical, AF.Space.m)
+            .background(AF.Color.freshBg, in: Capsule())
+
+            Spacer(minLength: 40)
+
+            Button("Готово") { dismiss() }
+                .buttonStyle(AFPrimaryButtonStyle())
         }
     }
 
     // MARK: - Actions
+
     private func performJoin() {
         guard inviteCode.count == 6 else { return }
-
         isJoining = true
         errorMessage = nil
-
         Task {
             do {
                 try await syncService.joinPair(inviteCode: inviteCode, importMode: importMode)
                 await MainActor.run {
                     successMessage = "Вы подключились к общему холодильнику"
                     isJoining = false
-
-                    // Auto-dismiss after 2 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        dismiss()
-                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { dismiss() }
                 }
             } catch {
                 await MainActor.run {
                     let message: String
                     if let apiError = error as? APIError {
                         switch apiError {
-                        case .serverError(let msg):
-                            message = msg
-                        case .unauthorized:
-                            message = "Неверный код приглашения"
-                        case .networkError:
-                            message = "Ошибка сети. Проверьте подключение к интернету"
-                        default:
-                            message = "Не удалось подключиться"
+                        case .serverError(let msg): message = msg
+                        case .unauthorized: message = "Неверный код приглашения"
+                        case .networkError: message = "Ошибка сети. Проверьте подключение к интернету"
+                        default: message = "Не удалось подключиться"
                         }
                     } else {
                         message = error.localizedDescription
@@ -379,6 +216,7 @@ struct JoinPairView: View {
 }
 
 // MARK: - Helper Views
+
 struct InfoRow: View {
     let icon: String
     let text: String
@@ -386,8 +224,10 @@ struct InfoRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: icon)
-                .frame(width: 16)
+                .foregroundStyle(AF.Color.accent)
+                .frame(width: 18)
             Text(text)
+            Spacer(minLength: 0)
         }
     }
 }

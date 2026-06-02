@@ -4,307 +4,174 @@ struct CreatePairView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var syncService: SyncService
 
-    @State private var pairName: String = ""
+    @State private var pairName: String = "Наша морозилка"
     @State private var inviteCode: String?
     @State private var isCreating = false
     @State private var errorMessage: String?
     @State private var showCopiedAlert = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [
-                        Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.3)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                ArcticBackdrop()
 
                 ScrollView {
-                    VStack(spacing: 32) {
+                    VStack(spacing: AF.Space.xxl) {
                         if let code = inviteCode {
-                            // Success state - show invite code
                             inviteCodeSection(code: code)
                         } else {
-                            // Input state - enter pair name
                             createPairSection
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 32)
+                    .padding(.horizontal, AF.Space.xxl)
+                    .padding(.vertical, AF.Space.xxl)
                 }
             }
-            .navigationTitle("Создать холодильник")
+            .navigationTitle("Общий холодильник")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
+                    Button("Отмена") { dismiss() }
                 }
             }
             .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") {
-                    errorMessage = nil
-                }
+                Button("OK") { errorMessage = nil }
             } message: {
-                if let error = errorMessage {
-                    Text(error)
-                }
+                if let error = errorMessage { Text(error) }
             }
         }
     }
 
-    // MARK: - Create Section
+    // MARK: - Create
+
     private var createPairSection: some View {
-        VStack(spacing: 28) {
-            // Header icon
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 80, height: 80)
-
-                    Image(systemName: "refrigerator.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-
+        VStack(spacing: AF.Space.xxl) {
+            VStack(spacing: AF.Space.l) {
+                brandTile(system: "refrigerator.fill")
                 VStack(spacing: 8) {
                     Text("Создать общий холодильник")
-                        .font(.title2)
-                        .fontWeight(.bold)
-
-                    Text("Синхронизируйте данные с партнером")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(AF.Typography.title3.weight(.bold))
+                        .foregroundStyle(AF.Color.textPrimary)
+                        .multilineTextAlignment(.center)
+                    Text("Синхронизируйте данные с партнёром")
+                        .font(AF.Typography.subheadline)
+                        .foregroundStyle(AF.Color.textSecondary)
                         .multilineTextAlignment(.center)
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, AF.Space.s)
 
-            // Input card
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 12) {
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Название холодильника")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    TextField("Например: Наш холодильник", text: $pairName)
-                        .textFieldStyle(.plain)
-                        .padding(16)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                        .font(AF.Typography.callout)
+                        .foregroundStyle(AF.Color.textSecondary)
+                    TextField("Например: Наша морозилка", text: $pairName)
+                        .font(AF.Typography.body)
+                        .foregroundStyle(AF.Color.textPrimary)
                         .disabled(isCreating)
                         .autocorrectionDisabled()
-
-                    HStack(spacing: 6) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("Это название увидит ваш партнер при подключении")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
                 }
-                .padding(20)
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, AF.Space.l)
+                .padding(.vertical, AF.Space.m)
             }
+            .afGroup()
 
-            Spacer()
+            Text("Это название увидит ваш партнёр при подключении")
+                .font(AF.Typography.footnote)
+                .foregroundStyle(AF.Color.textTertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Action button
             Button(action: createPair) {
-                HStack(spacing: 12) {
-                    if isCreating {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                        Text("Создать холодильник")
-                            .font(.headline)
-                    }
+                if isCreating {
+                    ProgressView().tint(AF.Color.onAccent)
+                } else {
+                    Label("Создать холодильник", systemImage: "plus.circle.fill")
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
             }
-            .background(
-                LinearGradient(
-                    colors: pairName.isEmpty || isCreating ?
-                        [Color.gray, Color.gray] :
-                        [Color.blue, Color.blue.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(16)
-            .shadow(color: (pairName.isEmpty || isCreating ? Color.clear : Color.blue.opacity(0.3)), radius: 8, y: 4)
+            .buttonStyle(AFPrimaryButtonStyle())
             .disabled(pairName.isEmpty || isCreating)
-            .animation(.easeInOut(duration: 0.2), value: pairName.isEmpty)
+            .opacity(pairName.isEmpty ? 0.5 : 1)
         }
     }
 
-    // MARK: - Invite Code Section
+    // MARK: - Invite code
+
     private func inviteCodeSection(code: String) -> some View {
-        VStack(spacing: 32) {
-            // Success icon
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.green.opacity(0.2), Color.green.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 100, height: 100)
-
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.green, Color.green.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-                .scaleEffect(showCopiedAlert ? 1.1 : 1.0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: showCopiedAlert)
-
+        VStack(spacing: AF.Space.xxl) {
+            VStack(spacing: AF.Space.l) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(AF.Color.fresh)
+                    .scaleEffect(showCopiedAlert ? 1.1 : 1)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: showCopiedAlert)
                 VStack(spacing: 8) {
                     Text("Холодильник создан!")
-                        .font(.title2)
-                        .fontWeight(.bold)
-
-                    Text("Поделитесь кодом с партнером")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(AF.Typography.title3.weight(.bold))
+                        .foregroundStyle(AF.Color.textPrimary)
+                    Text("Поделитесь кодом с партнёром")
+                        .font(AF.Typography.subheadline)
+                        .foregroundStyle(AF.Color.textSecondary)
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, AF.Space.s)
 
-            // Invite code card
-            VStack(spacing: 20) {
-                VStack(spacing: 12) {
-                    Text("Код приглашения")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.secondary)
-                        .textCase(.uppercase)
-                        .tracking(1)
+            VStack(spacing: AF.Space.l) {
+                Text("Код приглашения")
+                    .font(AF.Typography.footnote.weight(.semibold))
+                    .tracking(0.6)
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .textCase(.uppercase)
 
-                    Text(code)
-                        .font(.system(size: 52, weight: .bold, design: .rounded))
-                        .tracking(8)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.7)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .padding(.vertical, 24)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(.systemGray6))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .strokeBorder(
-                                    LinearGradient(
-                                        colors: [Color.blue.opacity(0.3), Color.blue.opacity(0.1)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 2
-                                )
-                        )
-                }
+                Text(code)
+                    .font(.system(size: 30, weight: .bold, design: .monospaced))
+                    .tracking(8)
+                    .foregroundStyle(AF.Color.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AF.Space.l)
+                    .background(AF.Color.accentSoft, in: RoundedRectangle(cornerRadius: AF.Radius.card, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AF.Radius.card, style: .continuous)
+                            .strokeBorder(AF.Color.accent, style: StrokeStyle(lineWidth: 1, dash: [5]))
+                    )
 
                 Button(action: copyCode) {
-                    HStack(spacing: 10) {
-                        Image(systemName: showCopiedAlert ? "checkmark.circle.fill" : "doc.on.doc.fill")
-                            .font(.title3)
-                        Text(showCopiedAlert ? "Скопировано!" : "Скопировать код")
-                            .font(.headline)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    Label(showCopiedAlert ? "Скопировано!" : "Скопировать код",
+                          systemImage: showCopiedAlert ? "checkmark.circle.fill" : "doc.on.doc.fill")
                 }
-                .background(
-                    LinearGradient(
-                        colors: showCopiedAlert ?
-                            [Color.green, Color.green.opacity(0.8)] :
-                            [Color.blue, Color.blue.opacity(0.8)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(16)
-                .shadow(color: (showCopiedAlert ? Color.green : Color.blue).opacity(0.3), radius: 8, y: 4)
-                .animation(.easeInOut(duration: 0.2), value: showCopiedAlert)
+                .buttonStyle(AFPrimaryButtonStyle())
 
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("Код действителен 24 часа. Отправьте его партнеру любым удобным способом")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.horizontal, 4)
+                Text("Код действителен 24 часа. Отправьте его партнёру любым удобным способом")
+                    .font(AF.Typography.footnote)
+                    .foregroundStyle(AF.Color.textTertiary)
+                    .multilineTextAlignment(.center)
             }
-            .padding(24)
-            .background(Color(.systemBackground))
-            .cornerRadius(20)
-            .shadow(color: Color.black.opacity(0.08), radius: 12, y: 4)
+            .padding(AF.Space.l)
+            .afGroup()
 
-            Spacer()
-
-            Button(action: { dismiss() }) {
-                Text("Готово")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-            }
-            .background(Color(.systemGray5))
-            .foregroundColor(.primary)
-            .cornerRadius(16)
+            Button("Готово") { dismiss() }
+                .buttonStyle(AFTintedButtonStyle())
         }
+    }
+
+    private func brandTile(system: String) -> some View {
+        Image(systemName: system)
+            .font(.system(size: 38))
+            .foregroundStyle(AF.Color.accent)
+            .frame(width: 84, height: 84)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(AF.Color.accent.opacity(0.16), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(AF.Color.frostEdge, lineWidth: 0.5))
+            .shadow(color: AF.Color.accent.opacity(0.35), radius: 14, y: 8)
     }
 
     // MARK: - Actions
+
     private func createPair() {
         guard !pairName.isEmpty else { return }
-
         isCreating = true
         errorMessage = nil
-
         Task {
             do {
                 let code = try await syncService.createPair(name: pairName)
@@ -314,13 +181,11 @@ struct CreatePairView: View {
                 }
             } catch let error as APIError {
                 await MainActor.run {
-                    print("❌ CreatePairView: APIError caught - \(error)")
                     errorMessage = error.localizedDescription
                     isCreating = false
                 }
             } catch {
                 await MainActor.run {
-                    print("❌ CreatePairView: Unknown error - \(error)")
                     errorMessage = error.localizedDescription
                     isCreating = false
                 }
@@ -331,15 +196,9 @@ struct CreatePairView: View {
     private func copyCode() {
         guard let code = inviteCode else { return }
         UIPasteboard.general.string = code
-
-        withAnimation {
-            showCopiedAlert = true
-        }
-
+        withAnimation { showCopiedAlert = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation {
-                showCopiedAlert = false
-            }
+            withAnimation { showCopiedAlert = false }
         }
     }
 }

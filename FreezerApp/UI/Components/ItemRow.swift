@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Detail-screen item card — frosted glass with title, meta line, optional
+/// notes, a freshness badge and an iOS-pill quantity stepper (packages).
 struct ItemRow: View {
     let item: Item
     var onEdit: () -> Void
@@ -7,209 +9,84 @@ struct ItemRow: View {
     var onUpdatePackagesCount: (Int) -> Void
     var onUpdateItemsCount: (Int) -> Void
 
-    private var expirationColor: Color {
-        if item.isExpired {
-            return Theme.Colors.error
-        } else if item.isExpiringSoon {
-            return Theme.Colors.warning
-        } else {
-            return Theme.Colors.success
-        }
-    }
-
-    private var expirationIcon: String {
-        if item.isExpired {
-            return "exclamationmark.circle"
-        } else if item.isExpiringSoon {
-            return "exclamationmark.triangle"
-        } else {
-            return "checkmark.circle"
-        }
-    }
-
-    private var expirationText: String {
-        if item.isExpired {
-            return "Просрочено"
-        } else if item.isExpiringSoon {
-            return "\(item.daysUntilExpiration) \(daysWord)"
-        } else {
-            return "Свежее"
-        }
-    }
-
-    private var daysWord: String {
-        russianPlural(item.daysUntilExpiration, one: "день", few: "дня", many: "дней")
-    }
-
     var body: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.md) {
-            // Content
-            VStack(alignment: .leading, spacing: 8) {
-                // Title with Edit Button
-                HStack {
+        VStack(alignment: .leading, spacing: AF.Space.m) {
+            // Title + edit
+            HStack(alignment: .top, spacing: AF.Space.m) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(item.name)
-                        .font(Theme.Typography.body)
-                        .foregroundColor(Theme.Colors.textPrimary)
+                        .font(AF.Typography.headline)
+                        .foregroundStyle(AF.Color.textPrimary)
 
-                    Spacer()
-
-                    Button {
-                        onEdit()
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 14))
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 28, height: 28)
-                            .background(Theme.Colors.background.opacity(0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    HStack(spacing: 6) {
+                        Text("\(item.packagesCount) уп.")
+                        sep
+                        Text("\(item.itemsCount) шт.")
+                        sep
+                        Text("Полка \(item.shelfNumber)")
                     }
+                    .font(AF.Typography.footnote)
+                    .foregroundStyle(AF.Color.textTertiary)
                 }
 
-                // Info
-                HStack(spacing: Theme.Spacing.md) {
-                    Text("\(item.packagesCount) уп. • \(item.itemsCount) шт.")
-                        .font(Theme.Typography.subheadline)
-                        .foregroundColor(Theme.Colors.textSecondary)
+                Spacer(minLength: 0)
 
-                    Text("Полка \(item.shelfNumber)")
-                        .font(Theme.Typography.subheadline)
-                        .foregroundColor(Theme.Colors.textSecondary)
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AF.Color.accent)
+                        .frame(width: 30, height: 30)
+                        .background(AF.Color.fillSecondary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-
-                // Expiration Status
-                HStack(spacing: 4) {
-                    Image(systemName: expirationIcon)
-                        .font(.system(size: 12))
-                        .foregroundColor(expirationColor)
-
-                    Text(expirationText)
-                        .font(Theme.Typography.footnote)
-                        .foregroundColor(expirationColor)
-                }
-
-                // Notes
-                if let notes = item.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(Theme.Typography.footnote)
-                        .foregroundColor(Theme.Colors.textSecondary)
-                        .lineLimit(2)
-                }
+                .buttonStyle(.plain)
             }
 
-            // Quantity Controls
-            VStack(alignment: .trailing, spacing: Theme.Spacing.sm) {
-                // Packages Controls
-                HStack(spacing: Theme.Spacing.xs) {
-                    Text("Уп.")
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.textSecondary)
-                        .frame(width: 28, alignment: .trailing)
+            if let notes = item.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(AF.Typography.footnote)
+                    .foregroundStyle(AF.Color.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 10)
+                    .background(AF.Color.fillTertiary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
 
-                    Button {
-                        onUpdatePackagesCount(-1)
-                    } label: {
-                        Image(systemName: "minus")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 28, height: 28)
-                            .background(Theme.Colors.background)
-                            .clipShape(Circle())
-                    }
-                    .disabled(item.packagesCount == 0)
-
-                    Text("\(item.packagesCount)")
-                        .font(Theme.Typography.subheadline)
-                        .foregroundColor(Theme.Colors.textPrimary)
-                        .frame(width: 28)
-
-                    Button {
-                        onUpdatePackagesCount(1)
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 28, height: 28)
-                            .background(Theme.Colors.background)
-                            .clipShape(Circle())
-                    }
-                }
-
-                // Items Controls
-                HStack(spacing: Theme.Spacing.xs) {
-                    Text("Шт.")
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.textSecondary)
-                        .frame(width: 28, alignment: .trailing)
-
-                    Button {
-                        onUpdateItemsCount(-1)
-                    } label: {
-                        Image(systemName: "minus")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 28, height: 28)
-                            .background(Theme.Colors.background)
-                            .clipShape(Circle())
-                    }
-                    .disabled(item.itemsCount == 0)
-
-                    Text("\(item.itemsCount)")
-                        .font(Theme.Typography.subheadline)
-                        .foregroundColor(Theme.Colors.textPrimary)
-                        .frame(width: 28)
-
-                    Button {
-                        onUpdateItemsCount(1)
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.Colors.primary)
-                            .frame(width: 28, height: 28)
-                            .background(Theme.Colors.background)
-                            .clipShape(Circle())
-                    }
+            // Freshness + packages stepper
+            HStack {
+                FreshnessBadge(daysLeft: item.daysUntilExpiration, style: .short)
+                Spacer()
+                AFStepper(value: item.packagesCount, leadingLabel: "Уп.") { newValue in
+                    onUpdatePackagesCount(newValue - item.packagesCount)
                 }
             }
         }
-        .padding(Theme.Spacing.lg)
-        .background(Theme.Colors.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.CornerRadius.lg))
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .afCard()
+    }
+
+    private var sep: some View {
+        Text("·").foregroundStyle(AF.Color.textTertiary.opacity(0.5))
     }
 }
 
 #Preview {
-    VStack(spacing: 16) {
-        ItemRow(
-            item: Item(
-                name: "Куриный бульон",
-                packagesCount: 2,
-                itemsCount: 5,
-                shelfNumber: 3,
-                expirationDate: Calendar.current.date(byAdding: .month, value: 6, to: Date())!,
-                notes: "Из домашней курицы",
-                categoryId: "1"
-            ),
-            onEdit: {},
-            onDelete: {},
-            onUpdatePackagesCount: { _ in },
-            onUpdateItemsCount: { _ in }
-        )
-
-        ItemRow(
-            item: Item(
-                name: "Малина",
-                packagesCount: 1,
-                itemsCount: 2,
-                shelfNumber: 1,
-                expirationDate: Calendar.current.date(byAdding: .day, value: 15, to: Date())!,
-                categoryId: "1"
-            ),
-            onEdit: {},
-            onDelete: {},
-            onUpdatePackagesCount: { _ in },
-            onUpdateItemsCount: { _ in }
-        )
+    ZStack {
+        ArcticBackdrop()
+        VStack(spacing: 16) {
+            ItemRow(
+                item: Item(name: "Куриный бульон", packagesCount: 2, itemsCount: 5, shelfNumber: 3,
+                           expirationDate: Calendar.current.date(byAdding: .month, value: 6, to: Date())!,
+                           notes: "Из домашней курицы", categoryId: "1"),
+                onEdit: {}, onDelete: {}, onUpdatePackagesCount: { _ in }, onUpdateItemsCount: { _ in }
+            )
+            ItemRow(
+                item: Item(name: "Фарш говяжий", packagesCount: 0, itemsCount: 1, shelfNumber: 3,
+                           expirationDate: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
+                           categoryId: "1"),
+                onEdit: {}, onDelete: {}, onUpdatePackagesCount: { _ in }, onUpdateItemsCount: { _ in }
+            )
+        }
+        .padding()
     }
-    .padding()
-    .background(Theme.Colors.background)
 }
