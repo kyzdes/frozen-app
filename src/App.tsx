@@ -17,7 +17,7 @@ import { apiClient, UnauthorizedError } from './services/api-client';
 import { buildBackupPayload, parseBackupPayload } from './services/backup';
 import { notificationService } from './services/notifications';
 import { loadState, saveState } from './services/storage';
-import { applyServerChanges, compactPendingChanges } from './services/sync-engine';
+import { applyServerChanges, compactPendingChanges, MAX_HISTORY } from './services/sync-engine';
 import { AuthScreen } from './screens/AuthScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { CategoryScreen } from './screens/CategoryScreen';
@@ -321,7 +321,7 @@ export default function App() {
         const updated = items.find((i) => i.id === itemDraft.id);
         if (!updated) return prev;
         const he = buildHistoryEvent('item_updated', updated);
-        const history = [he, ...prev.history].slice(0, 500);
+        const history = [he, ...prev.history].slice(0, MAX_HISTORY);
         const pendingChanges = [...prev.sync.pendingChanges, createPendingChange('itemUpdated', updated.id, { item: updated }), createPendingChange('historyAdded', he.id, { historyEvent: he })];
         return { ...prev, items, categories: withCategoryCounts(prev.categories, items), history, sync: { ...prev.sync, pendingChanges, status: { ...prev.sync.status, pendingChangesCount: pendingChanges.length } } };
       });
@@ -331,7 +331,7 @@ export default function App() {
         const item: Item = { id: crypto.randomUUID(), categoryId, name: itemDraft.name.trim(), packagesCount: Math.max(0, itemDraft.packagesCount), itemsCount: Math.max(0, itemDraft.itemsCount), shelfNumber: Math.max(1, itemDraft.shelfNumber), freezeDate: dateInputToISO(itemDraft.freezeDate), expirationDate: dateInputToISO(itemDraft.expirationDate), notes: itemDraft.notes.trim() || undefined, photoUrl: itemDraft.photoUrl || undefined, updatedAt: now, deletedAt: null };
         const he = buildHistoryEvent('item_added', item);
         const items = [...prev.items, item];
-        const history = [he, ...prev.history].slice(0, 500);
+        const history = [he, ...prev.history].slice(0, MAX_HISTORY);
         const pendingChanges = [...prev.sync.pendingChanges, createPendingChange('itemAdded', item.id, { item }), createPendingChange('historyAdded', he.id, { historyEvent: he })];
         return { ...prev, items, history, categories: withCategoryCounts(prev.categories, items), sync: { ...prev.sync, pendingChanges, status: { ...prev.sync.status, pendingChangesCount: pendingChanges.length } } };
       });
@@ -348,7 +348,7 @@ export default function App() {
       const deleted = { ...found, updatedAt: now, deletedAt: now };
       const he = buildHistoryEvent('item_deleted', found);
       const items = prev.items.filter((i) => i.id !== itemId);
-      const history = [he, ...prev.history].slice(0, 500);
+      const history = [he, ...prev.history].slice(0, MAX_HISTORY);
       const pendingChanges = [...prev.sync.pendingChanges, createPendingChange('itemDeleted', deleted.id, { item: deleted }), createPendingChange('historyAdded', he.id, { historyEvent: he })];
       return { ...prev, items, history, categories: withCategoryCounts(prev.categories, items), sync: { ...prev.sync, pendingChanges, status: { ...prev.sync.status, pendingChangesCount: pendingChanges.length } } };
     });
@@ -362,7 +362,7 @@ export default function App() {
       const updated = items.find((i) => i.id === itemId);
       if (!updated) return prev;
       const he = buildHistoryEvent(field === 'packagesCount' ? 'packages_changed' : 'items_changed', updated, field === 'packagesCount' ? { packagesDelta: delta } : { itemsDelta: delta });
-      const history = [he, ...prev.history].slice(0, 500);
+      const history = [he, ...prev.history].slice(0, MAX_HISTORY);
       const pendingChanges = [...prev.sync.pendingChanges, createPendingChange('itemUpdated', updated.id, { item: updated }), createPendingChange('historyAdded', he.id, { historyEvent: he })];
       return { ...prev, items, history, sync: { ...prev.sync, pendingChanges, status: { ...prev.sync.status, pendingChangesCount: pendingChanges.length } } };
     });

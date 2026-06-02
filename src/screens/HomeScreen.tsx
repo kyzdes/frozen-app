@@ -2,6 +2,7 @@ import { getExpirationState, getItemsWord } from '../lib/helpers';
 import { tint } from '../lib/format';
 import { FreshBadge } from '../lib/frost';
 import { Icon } from '../lib/icons';
+import type { CopyDictionary } from '../lib/copy';
 import type { HomeScreenProps } from '../lib/types';
 
 function groupsWord(count: number, lang: 'ru' | 'en'): string {
@@ -11,10 +12,8 @@ function groupsWord(count: number, lang: 'ru' | 'en'): string {
   return 'групп';
 }
 
-function itemMeta(packages: number, pieces: number, shelf: number, lang: 'ru' | 'en'): string {
-  return lang === 'ru'
-    ? `${packages} уп. · ${pieces} шт. · Полка ${shelf}`
-    : `${packages} pk · ${pieces} pcs · Shelf ${shelf}`;
+function itemMeta(packages: number, pieces: number, shelf: number, t: CopyDictionary): string {
+  return `${packages} ${t.pkShort} · ${pieces} ${t.pcsShort} · ${t.shelf} ${shelf}`;
 }
 
 export function HomeScreen({
@@ -170,7 +169,7 @@ export function HomeScreen({
                     <div key={item.id} className="w-eitem" onClick={() => onOpenCategory(category.id)}>
                       <div>
                         <div className="nm">{item.name}</div>
-                        <div className="meta">{itemMeta(item.packagesCount, item.itemsCount, item.shelfNumber, lang)}</div>
+                        <div className="meta">{itemMeta(item.packagesCount, item.itemsCount, item.shelfNumber, t)}</div>
                       </div>
                       <FreshBadge item={item} lang={lang} />
                     </div>

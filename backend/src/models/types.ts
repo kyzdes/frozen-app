@@ -130,7 +130,16 @@ export interface HistoryEvent {
   item_name: string;
   packages_delta?: number;
   items_delta?: number;
+  /**
+   * @deprecated Legacy "absolute new value" columns. The canonical 5-event
+   * model (D-006) records deltas, not absolutes. These columns still exist in
+   * the DB (migration 001) and are passed through by the sync/pair INSERTs, but
+   * nothing in the app reads them back as meaningful state and clients never
+   * rely on them. Kept on the type only to avoid silently dropping a column the
+   * write path still references; do NOT add new usages.
+   */
   new_packages?: number;
+  /** @deprecated See `new_packages`. */
   new_items?: number;
   timestamp: string;
   deleted_at?: string;

@@ -16,6 +16,12 @@ import type {
   PendingChange,
 } from '../domain/models';
 
+/**
+ * Maximum number of history events retained after a merge. Exported so that
+ * other callers (e.g. App.tsx local-history caps) can align to a single value.
+ */
+export const MAX_HISTORY = 1000;
+
 function byUpdatedAt<T extends { updatedAt: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
 }
@@ -100,6 +106,18 @@ function mergeHistory(local: HistoryEvent[], incoming: HistoryEvent[]): HistoryE
 }
 
 export function applyServerChanges(state: AppState, data: SyncDataDTO): AppState {
+  return applyServerChangesWithMeta(state, data).state;
+}
+
+/**
+ * Like {@link applyServerChanges}, but also reports whether the merged history
+ * exceeded {@link MAX_HISTORY} and was truncated. Callers (e.g. the UI) can use
+ * `historyTruncated` to surface that older history is no longer retained.
+ */
+export function applyServerChangesWithMeta(
+  state: AppState,
+  data: SyncDataDTO
+): { state: AppState; historyTruncated: boolean } {
   const incomingCategories = data.categories.map(categoryFromDTO);
   const incomingItems = data.items.map(itemFromDTO);
   const incomingHistory = data.history.map(historyFromDTO);
@@ -110,10 +128,15 @@ export function applyServerChanges(state: AppState, data: SyncDataDTO): AppState
   const mergedItems = mergeItems(state.items, incomingItems).filter((item) => !item.deletedAt);
   const mergedHistory = mergeHistory(state.history, incomingHistory).filter((event) => !event.deletedAt);
 
+  const historyTruncated = mergedHistory.length > MAX_HISTORY;
+
   return {
-    ...state,
-    categories: withCategoryCounts(mergedCategories, mergedItems),
-    items: mergedItems,
-    history: mergedHistory.slice(0, 500),
+    state: {
+      ...state,
+      categories: withCategoryCounts(mergedCategories, mergedItems),
+      items: mergedItems,
+      history: mergedHistory.slice(0, MAX_HISTORY),
+    },
+    historyTruncated,
   };
 }

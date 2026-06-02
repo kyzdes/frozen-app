@@ -41,6 +41,8 @@ export type CopyDictionary = {
   shelf: string;
   openFullList: string;
   addShort: string;
+  pkShort: string;
+  pcsShort: string;
 };
 
 export const COPY: Record<'ru' | 'en', CopyDictionary> = {
@@ -87,6 +89,8 @@ export const COPY: Record<'ru' | 'en', CopyDictionary> = {
     shelf: 'Полка',
     openFullList: 'Открыть полный список',
     addShort: 'Добавить +',
+    pkShort: 'уп.',
+    pcsShort: 'шт.',
   },
   en: {
     appName: 'FreezerApp',
@@ -131,6 +135,8 @@ export const COPY: Record<'ru' | 'en', CopyDictionary> = {
     shelf: 'Shelf',
     openFullList: 'Open full list',
     addShort: 'Add +',
+    pkShort: 'pk',
+    pcsShort: 'pcs',
   },
 };
 
