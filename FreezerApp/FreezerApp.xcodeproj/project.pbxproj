@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0051714BC0079051772CF991 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B6B022521999E68613D4B9D6 /* Foundation.framework */; };
 		11776462C4E845DBB721933C /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E1D42958D6416C96845C75 /* Localization.swift */; };
 		378B424FA7B24793BD58E95D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4D516241DD194ADF860E6D83 /* Localizable.strings */; };
+		663125B7584DD74FB15C6EB1 /* SyncDecodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE5AD257CE084B996C988E /* SyncDecodeTests.swift */; };
+		79029F5A81E3493C32FE4CB6 /* HistoryEventTypeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 096DD31060B22B82B130DE56 /* HistoryEventTypeTests.swift */; };
 		A40F4D872EDE042E00416944 /* BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40F4D862EDE042E00416944 /* BackupService.swift */; };
 		A40F4D8A2EDE045F00416944 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40F4D882EDE045F00416944 /* SettingsView.swift */; };
 		A40F4D8C2EDE050000416944 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40F4D8B2EDE050000416944 /* NotificationService.swift */; };
@@ -36,7 +39,19 @@
 		A4FF10B32F00BBBB00000001 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FF10B22F00BBBB00000001 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		77A6DEC989356C48A8413474 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A4CB15D82EDB395100FF4558 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A4CB15DF2EDB395100FF4558;
+			remoteInfo = FreezerApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		096DD31060B22B82B130DE56 /* HistoryEventTypeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryEventTypeTests.swift; sourceTree = "<group>"; };
+		1333D5B384F517E5CEFA7402 /* FreezerAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreezerAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		13803C49778D4459852F7B3A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A40F4D862EDE042E00416944 /* BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupService.swift; sourceTree = "<group>"; };
 		A40F4D882EDE045F00416944 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -65,18 +80,30 @@
 		A4FF10B02F00AAAA00000001 /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
 		A4FF10B22F00BBBB00000001 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A8E1D42958D6416C96845C75 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		B6B022521999E68613D4B9D6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		B800D01AE69D4F08A6918E80 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		FBCE5AD257CE084B996C988E /* SyncDecodeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyncDecodeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A4CB15E22EDB395100FF4558 /* FreezerApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = FreezerApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0646B2CCFEE9AF467CE3E719 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0051714BC0079051772CF991 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A4CB15DD2EDB395100FF4558 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -117,6 +144,8 @@
 				A4CB15FE2EDB399B00FF4558 /* Features */,
 				A4CB16042EDB399B00FF4558 /* UI */,
 				4D516241DD194ADF860E6D83 /* Localizable.strings */,
+				F23283121DEF07BDFE751BC6 /* Frameworks */,
+				D07907516D1FFE2FB1DC1559 /* FreezerAppTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -124,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				A4CB15E02EDB395100FF4558 /* FreezerApp.app */,
+				1333D5B384F517E5CEFA7402 /* FreezerAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -242,9 +272,53 @@
 			path = UI;
 			sourceTree = "<group>";
 		};
+		CB356F7C5CC627BB192B1323 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				B6B022521999E68613D4B9D6 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		D07907516D1FFE2FB1DC1559 /* FreezerAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				FBCE5AD257CE084B996C988E /* SyncDecodeTests.swift */,
+				096DD31060B22B82B130DE56 /* HistoryEventTypeTests.swift */,
+			);
+			name = FreezerAppTests;
+			path = ../FreezerAppTests;
+			sourceTree = "<group>";
+		};
+		F23283121DEF07BDFE751BC6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CB356F7C5CC627BB192B1323 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		74ADBCE4B5FAFF2B9648CBE6 /* FreezerAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F45333B1265B3044282B67E9 /* Build configuration list for PBXNativeTarget "FreezerAppTests" */;
+			buildPhases = (
+				D705B8E3CEA1938DFB3C50C1 /* Sources */,
+				0646B2CCFEE9AF467CE3E719 /* Frameworks */,
+				43BC9F55EB24943E98B3BE1E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D24B5CF99547BE4314D16123 /* PBXTargetDependency */,
+			);
+			name = FreezerAppTests;
+			productName = FreezerAppTests;
+			productReference = 1333D5B384F517E5CEFA7402 /* FreezerAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		A4CB15DF2EDB395100FF4558 /* FreezerApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A4CB15EB2EDB395200FF4558 /* Build configuration list for PBXNativeTarget "FreezerApp" */;
@@ -296,11 +370,19 @@
 			projectRoot = "";
 			targets = (
 				A4CB15DF2EDB395100FF4558 /* FreezerApp */,
+				74ADBCE4B5FAFF2B9648CBE6 /* FreezerAppTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		43BC9F55EB24943E98B3BE1E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A4CB15DE2EDB395100FF4558 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -345,7 +427,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D705B8E3CEA1938DFB3C50C1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				663125B7584DD74FB15C6EB1 /* SyncDecodeTests.swift in Sources */,
+				79029F5A81E3493C32FE4CB6 /* HistoryEventTypeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D24B5CF99547BE4314D16123 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FreezerApp;
+			target = A4CB15DF2EDB395100FF4558 /* FreezerApp */;
+			targetProxy = 77A6DEC989356C48A8413474 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		4D516241DD194ADF860E6D83 /* Localizable.strings */ = {
@@ -360,6 +460,59 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		1E5963D2AE774034A0BF6EFB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kyzdes.TestFreezerApp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FreezerApp.app/FreezerApp";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		868B2451E0165BB266D67E7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kyzdes.TestFreezerApp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FreezerApp.app/FreezerApp";
+			};
+			name = Debug;
+		};
 		A4CB15E92EDB395200FF4558 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -584,6 +737,15 @@
 			buildConfigurations = (
 				A4CB15EC2EDB395200FF4558 /* Debug */,
 				A4CB15ED2EDB395200FF4558 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F45333B1265B3044282B67E9 /* Build configuration list for PBXNativeTarget "FreezerAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1E5963D2AE774034A0BF6EFB /* Release */,
+				868B2451E0165BB266D67E7F /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
