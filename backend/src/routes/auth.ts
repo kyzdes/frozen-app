@@ -13,6 +13,7 @@ import {
   RegisterRequest,
 } from '../models/types.js';
 import { authenticateUser, AuthenticatedRequest } from '../middleware/auth.js';
+import { deleteUserAccount } from '../services/account.js';
 import {
   AuthService,
   hashPassword,
@@ -326,6 +327,29 @@ const authRoutes: FastifyPluginAsync = async (server) => {
     const { sessionId } = (request as AuthenticatedRequest).user;
     await authService.revokeSession(sessionId);
     return { success: true };
+  });
+
+  // DELETE /auth/account — permanent account deletion (GDPR erasure / Apple 5.1.1(v)).
+  server.delete('/account', {
+    onRequest: [authenticateUser],
+  }, async (request, reply) => {
+    const { userId } = (request as AuthenticatedRequest).user;
+    const client = await db.connect();
+
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
+      await deleteUserAccount(client, userId);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    request.log.info({ msg: 'account_deleted', userId });
+    return reply.code(204).send();
   });
 
   // GET /auth/me

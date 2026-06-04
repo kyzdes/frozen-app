@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy · Freezer Inventory</title>
+  <meta name="robots" content="all" />
+  <style>
+    :root {
+      --frost-ice: #2BA4DA;
+      --frost-cyan: #38C6E0;
+      --grad: linear-gradient(135deg, #2BA4DA 0%, #38C6E0 100%);
+      --bg: #EAF3FA;
+      --card: #FFFFFF;
+      --ink: #16323F;
+      --ink-soft: #4A6675;
+      --line: rgba(43, 164, 218, 0.16);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(120% 95% at 12% -8%, #DCEEFA 0%, rgba(220,238,250,0) 46%),
+        var(--bg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 80px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 28px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 46px; height: 46px; border-radius: 13px; background: var(--grad);
+      display: grid; place-items: center; font-size: 24px;
+      box-shadow: 0 8px 20px rgba(43,164,218,0.35);
+    }
+    .brand b { font-size: 18px; font-weight: 700; }
+    .brand span { display: block; font-size: 13px; color: var(--ink-soft); }
+    .toggle { display: flex; gap: 4px; background: rgba(255,255,255,0.7); padding: 4px; border-radius: 11px; border: 1px solid var(--line); flex-wrap: wrap; }
+    .toggle button {
+      border: 0; background: transparent; padding: 7px 12px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; color: var(--ink-soft); cursor: pointer;
+    }
+    .toggle button.active { background: var(--grad); color: #fff; box-shadow: 0 3px 8px rgba(43,164,218,0.3); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+      padding: 30px 30px 34px; box-shadow: 0 20px 50px rgba(27,127,181,0.08);
+    }
+    h1 { font-size: 26px; margin: 0 0 4px; }
+    .updated { color: var(--ink-soft); font-size: 14px; margin: 0 0 22px; }
+    h2 { font-size: 18px; margin: 28px 0 8px; }
+    p, li { color: var(--ink); font-size: 15.5px; }
+    ul { padding-left: 20px; }
+    li { margin: 4px 0; }
+    a { color: var(--frost-ice); }
+    .muted { color: var(--ink-soft); font-size: 14px; }
+    .lang { display: none; }
+    .lang.show { display: block; }
+    @media (max-width: 480px) { .card { padding: 22px 18px 26px; } h1 { font-size: 22px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">❄️</div>
+        <div>
+          <b>Freezer Inventory</b>
+          <span id="tagline" data-en="Freezer inventory manager" data-zh="冷冻库库存管理工具" data-ja="冷凍庫の在庫管理アプリ" data-es="Gestor de inventario del congelador">Freezer inventory manager</span>
+        </div>
+      </div>
+      <div class="toggle" role="group" aria-label="Language">
+        <button id="btn-en" onclick="setLang('en')">EN</button>
+        <button id="btn-zh" onclick="setLang('zh')">中文</button>
+        <button id="btn-ja" onclick="setLang('ja')">日本語</button>
+        <button id="btn-es" onclick="setLang('es')">ES</button>
+      </div>
+    </header>
+
+    <main class="card">
+      <!-- ENGLISH -->
+      <section class="lang" id="en">
+        <h1>Privacy Policy</h1>
+        <p class="updated">Last updated: June 4, 2026</p>
+        <p>Freezer Inventory (“the app”, “we”) is a household freezer inventory manager. This policy
+        explains what personal data we process and why. The app is built to work
+        <strong>without an account</strong>: you can add groups, items, expiry dates, history and
+        notifications entirely on your device. An account is only needed if you choose to sync a
+        shared freezer with a partner.</p>
+
+        <h2>1. Who is responsible</h2>
+        <p>The data controller is the developer of Freezer Inventory. For any privacy request, contact
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a>.</p>
+
+        <h2>2. Data we process</h2>
+        <ul>
+          <li><strong>Local-only (never leaves your device unless you sync):</strong> your groups,
+          items, expiration dates, notes, history, and app settings (language, theme, notifications).
+          Stored locally on your device.</li>
+          <li><strong>Account data (only if you create an account):</strong> your email address,
+          display name, and a securely hashed password.</li>
+          <li><strong>Session/technical data (only when signed in):</strong> a device identifier, IP
+          address and browser/app user-agent, kept with each login session.</li>
+          <li><strong>Shared-freezer data (only if you pair with a partner):</strong> your inventory
+          is stored on our server so it can sync between the two paired devices.</li>
+          <li><strong>Usage analytics:</strong> anonymous in-app events (e.g. “item added”) with a
+          random device identifier, used only to understand product usage.</li>
+        </ul>
+
+        <h2>3. Why we process it (legal basis)</h2>
+        <ul>
+          <li><strong>Account &amp; sync</strong> — to provide the service you requested (performance
+          of a contract).</li>
+          <li><strong>Session/technical data</strong> — to keep your account secure (legitimate
+          interest).</li>
+          <li><strong>Analytics</strong> — to improve the app (legitimate interest). We do
+          <strong>not</strong> use it for advertising or cross-app tracking.</li>
+        </ul>
+
+        <h2>4. Where data is stored</h2>
+        <p>Server data is hosted on infrastructure located in <strong>Germany (European Union)</strong>
+        and is processed in line with the GDPR.</p>
+
+        <h2>5. How long we keep it</h2>
+        <ul>
+          <li>Login sessions and technical logs: up to 30 days.</li>
+          <li>Account and synced inventory: until you delete your account.</li>
+          <li>Local data: stays on your device until you remove it or uninstall the app.</li>
+        </ul>
+
+        <h2>6. Sharing</h2>
+        <p>We do <strong>not</strong> sell your data and do not share it with advertisers. Data is
+        processed only by our hosting provider acting on our behalf, and shared with a partner device
+        only when you explicitly join a shared freezer.</p>
+
+        <h2>7. Your rights &amp; account deletion</h2>
+        <p>You can access, correct, export, or delete your data, and object to processing. You can
+        <strong>delete your account and all of its server-side data at any time directly in the app</strong>:
+        open <em>Settings → Account → Delete account</em>. Your on-device data is kept after account
+        deletion and can be removed by uninstalling the app. You can also email
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a> to exercise any right.</p>
+
+        <h2>8. Children</h2>
+        <p>The app is not directed to children and we do not knowingly collect data from children.</p>
+
+        <h2>9. Changes</h2>
+        <p>We may update this policy; the “Last updated” date reflects the current version.</p>
+        <p class="muted">Contact: <a href="mailto:ceo@moone.dev">ceo@moone.dev</a></p>
+      </section>
+
+      <!-- 简体中文 -->
+      <section class="lang" id="zh">
+        <h1>隐私政策</h1>
+        <p class="updated">最后更新：2026 年 6 月 4 日</p>
+        <p>「冷冻库」（Freezer Inventory，下称"本应用""我们"）是一款家用冷冻库库存管理工具。本政策说明我们处理哪些个人数据及其原因。本应用设计为
+        <strong>无需账户即可使用</strong>：你可以完全在设备本地添加分组、物品、保质期、历史记录和通知。仅当你选择与伙伴同步共享冷冻库时才需要账户。</p>
+
+        <h2>1. 谁负责数据</h2>
+        <p>数据控制者是 Freezer Inventory 的开发者。如有任何隐私相关请求，请联系
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a>。</p>
+
+        <h2>2. 我们处理的数据</h2>
+        <ul>
+          <li><strong>仅本地（除非你同步，否则不会离开设备）：</strong>你的分组、物品、保质期、备注、历史记录和应用设置（语言、主题、通知）。存储在你的设备本地。</li>
+          <li><strong>账户数据（仅当你创建账户时）：</strong>你的电子邮箱、显示名称，以及经过安全哈希处理的密码。</li>
+          <li><strong>会话/技术数据（仅在登录时）：</strong>与每个登录会话一起保存的设备标识符、IP 地址和浏览器/应用 user-agent。</li>
+          <li><strong>共享冷冻库数据（仅当你与伙伴配对时）：</strong>你的库存会存储在我们的服务器上，以便在两台已配对设备之间同步。</li>
+          <li><strong>使用分析：</strong>匿名的应用内事件（如"添加物品"）及一个随机设备标识符，仅用于了解产品使用情况。</li>
+        </ul>
+
+        <h2>3. 处理的法律依据</h2>
+        <ul>
+          <li><strong>账户与同步</strong> — 为提供你所请求的服务（履行合同）。</li>
+          <li><strong>会话/技术数据</strong> — 为保障账户安全（合法利益）。</li>
+          <li><strong>分析</strong> — 为改进应用（合法利益）。我们<strong>不</strong>将其用于广告或跨应用追踪。</li>
+        </ul>
+
+        <h2>4. 数据存储地点</h2>
+        <p>服务器数据托管于位于<strong>德国（欧盟）</strong>的基础设施，并依据 GDPR 进行处理。</p>
+
+        <h2>5. 数据保留期限</h2>
+        <ul>
+          <li>登录会话和技术日志：最多 30 天。</li>
+          <li>账户和已同步的库存：直到你删除账户为止。</li>
+          <li>本地数据：保留在你的设备上，直到你将其删除或卸载应用。</li>
+        </ul>
+
+        <h2>6. 数据共享</h2>
+        <p>我们<strong>不</strong>出售你的数据，也不与广告商共享。数据仅由代表我们的托管服务商处理，并且只有当你主动加入共享冷冻库时才会与伙伴设备共享。</p>
+
+        <h2>7. 你的权利与账户删除</h2>
+        <p>你可以访问、更正、导出或删除你的数据，并反对处理。你可以
+        <strong>随时在应用内删除账户及其全部服务器端数据</strong>：打开<em>设置 → 账户 → 删除账户</em>。账户删除后，设备上的本地数据仍会保留，可通过卸载应用删除。你也可以发送邮件至
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a> 行使任何权利。</p>
+
+        <h2>8. 儿童</h2>
+        <p>本应用并非面向儿童，我们不会在知情的情况下收集儿童数据。</p>
+
+        <h2>9. 变更</h2>
+        <p>我们可能会更新本政策；"最后更新"日期反映当前版本。</p>
+        <p class="muted">联系方式：<a href="mailto:ceo@moone.dev">ceo@moone.dev</a></p>
+      </section>
+
+      <!-- 日本語 -->
+      <section class="lang" id="ja">
+        <h1>プライバシーポリシー</h1>
+        <p class="updated">最終更新日：2026年6月4日</p>
+        <p>「冷凍庫」（Freezer Inventory、以下「本アプリ」「当社」）は、家庭用冷凍庫の在庫管理アプリです。本ポリシーでは、当社が処理する個人データとその目的を説明します。本アプリは
+        <strong>アカウントなしで使える</strong>ように設計されています。分類・アイテム・賞味期限・履歴・通知はすべて端末内で利用できます。アカウントが必要になるのは、共有冷凍庫をパートナーと同期する場合のみです。</p>
+
+        <h2>1. 責任者</h2>
+        <p>データ管理者は Freezer Inventory の開発者です。プライバシーに関するお問い合わせは
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a> までご連絡ください。</p>
+
+        <h2>2. 当社が処理するデータ</h2>
+        <ul>
+          <li><strong>ローカルのみ（同期しない限り端末から出ません）：</strong>分類、アイテム、賞味期限、メモ、履歴、アプリ設定（言語・テーマ・通知）。端末内に保存されます。</li>
+          <li><strong>アカウントデータ（アカウントを作成した場合のみ）：</strong>メールアドレス、表示名、安全にハッシュ化されたパスワード。</li>
+          <li><strong>セッション／技術データ（ログイン時のみ）：</strong>各ログインセッションとともに保存される端末識別子、IP アドレス、ブラウザ／アプリの user-agent。</li>
+          <li><strong>共有冷凍庫のデータ（パートナーと連携した場合のみ）：</strong>在庫が当社サーバーに保存され、連携した2台の端末間で同期されます。</li>
+          <li><strong>利用状況の分析：</strong>匿名のアプリ内イベント（例：「アイテム追加」）とランダムな端末識別子。製品の利用状況の把握のみに使用します。</li>
+        </ul>
+
+        <h2>3. 処理の根拠</h2>
+        <ul>
+          <li><strong>アカウントと同期</strong> — ご要望のサービス提供のため（契約の履行）。</li>
+          <li><strong>セッション／技術データ</strong> — アカウントの安全確保のため（正当な利益）。</li>
+          <li><strong>分析</strong> — アプリ改善のため（正当な利益）。広告やアプリをまたぐトラッキングには<strong>使用しません</strong>。</li>
+        </ul>
+
+        <h2>4. データの保存場所</h2>
+        <p>サーバーデータは<strong>ドイツ（EU）</strong>のインフラでホストされ、GDPR に従って処理されます。</p>
+
+        <h2>5. 保存期間</h2>
+        <ul>
+          <li>ログインセッションと技術ログ：最大30日。</li>
+          <li>アカウントと同期された在庫：アカウントを削除するまで。</li>
+          <li>ローカルデータ：削除するかアプリをアンインストールするまで端末内に残ります。</li>
+        </ul>
+
+        <h2>6. 共有</h2>
+        <p>当社はデータを販売せず、広告主とも共有しません。データは当社に代わって処理するホスティング事業者のみが扱い、あなたが共有冷凍庫に参加した場合に限りパートナーの端末と共有されます。</p>
+
+        <h2>7. あなたの権利とアカウント削除</h2>
+        <p>データへのアクセス、訂正、エクスポート、削除、処理への異議が可能です。
+        <strong>アプリ内でいつでもアカウントとサーバー上のデータをすべて削除できます</strong>：<em>設定 → アカウント → アカウントを削除</em>。アカウント削除後も端末内のローカルデータは保持され、アプリのアンインストールで削除できます。
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a> へのメールでも各種権利を行使できます。</p>
+
+        <h2>8. お子様</h2>
+        <p>本アプリは子ども向けではなく、子どものデータを意図的に収集することはありません。</p>
+
+        <h2>9. 変更</h2>
+        <p>本ポリシーは更新されることがあります。「最終更新日」が現在のバージョンを示します。</p>
+        <p class="muted">お問い合わせ：<a href="mailto:ceo@moone.dev">ceo@moone.dev</a></p>
+      </section>
+
+      <!-- Español -->
+      <section class="lang" id="es">
+        <h1>Política de privacidad</h1>
+        <p class="updated">Última actualización: 4 de junio de 2026</p>
+        <p>Freezer Inventory («la app», «nosotros») es un gestor de inventario para el congelador del
+        hogar. Esta política explica qué datos personales tratamos y por qué. La app está diseñada para
+        funcionar <strong>sin cuenta</strong>: puedes añadir grupos, artículos, fechas de caducidad,
+        historial y notificaciones totalmente en tu dispositivo. Solo necesitas una cuenta si decides
+        sincronizar un congelador compartido con tu pareja.</p>
+
+        <h2>1. Quién es responsable</h2>
+        <p>El responsable del tratamiento es el desarrollador de Freezer Inventory. Para cualquier
+        solicitud de privacidad, escribe a <a href="mailto:ceo@moone.dev">ceo@moone.dev</a>.</p>
+
+        <h2>2. Datos que tratamos</h2>
+        <ul>
+          <li><strong>Solo locales (no salen de tu dispositivo salvo que sincronices):</strong> tus
+          grupos, artículos, fechas de caducidad, notas, historial y ajustes (idioma, tema,
+          notificaciones). Se guardan localmente en tu dispositivo.</li>
+          <li><strong>Datos de cuenta (solo si creas una cuenta):</strong> tu correo electrónico,
+          nombre y una contraseña con hash seguro.</li>
+          <li><strong>Datos de sesión/técnicos (solo al iniciar sesión):</strong> un identificador de
+          dispositivo, la dirección IP y el user-agent del navegador/app, guardados con cada sesión.</li>
+          <li><strong>Datos del congelador compartido (solo si te emparejas con tu pareja):</strong> tu
+          inventario se guarda en nuestro servidor para sincronizarse entre los dos dispositivos
+          emparejados.</li>
+          <li><strong>Analítica de uso:</strong> eventos anónimos dentro de la app (p. ej. «artículo
+          añadido») con un identificador de dispositivo aleatorio, usados solo para entender el uso del
+          producto.</li>
+        </ul>
+
+        <h2>3. Por qué los tratamos (base legal)</h2>
+        <ul>
+          <li><strong>Cuenta y sincronización</strong> — para prestar el servicio que solicitas
+          (ejecución de un contrato).</li>
+          <li><strong>Datos de sesión/técnicos</strong> — para mantener tu cuenta segura (interés
+          legítimo).</li>
+          <li><strong>Analítica</strong> — para mejorar la app (interés legítimo). <strong>No</strong>
+          la usamos para publicidad ni seguimiento entre apps.</li>
+        </ul>
+
+        <h2>4. Dónde se almacenan los datos</h2>
+        <p>Los datos del servidor se alojan en infraestructura ubicada en <strong>Alemania (Unión
+        Europea)</strong> y se tratan conforme al RGPD.</p>
+
+        <h2>5. Cuánto tiempo los conservamos</h2>
+        <ul>
+          <li>Sesiones de inicio y registros técnicos: hasta 30 días.</li>
+          <li>Cuenta e inventario sincronizado: hasta que elimines tu cuenta.</li>
+          <li>Datos locales: permanecen en tu dispositivo hasta que los borres o desinstales la app.</li>
+        </ul>
+
+        <h2>6. Compartición</h2>
+        <p><strong>No</strong> vendemos tus datos ni los compartimos con anunciantes. Solo los trata
+        nuestro proveedor de alojamiento en nuestro nombre, y se comparten con el dispositivo de tu
+        pareja únicamente cuando te unes a un congelador compartido.</p>
+
+        <h2>7. Tus derechos y eliminación de la cuenta</h2>
+        <p>Puedes acceder, corregir, exportar o eliminar tus datos y oponerte al tratamiento. Puedes
+        <strong>eliminar tu cuenta y todos sus datos del servidor en cualquier momento desde la app</strong>:
+        abre <em>Ajustes → Cuenta → Eliminar cuenta</em>. Los datos locales de tu dispositivo se
+        conservan tras eliminar la cuenta y se borran al desinstalar la app. También puedes escribir a
+        <a href="mailto:ceo@moone.dev">ceo@moone.dev</a> para ejercer cualquier derecho.</p>
+
+        <h2>8. Menores</h2>
+        <p>La app no está dirigida a menores y no recopilamos datos de menores de forma consciente.</p>
+
+        <h2>9. Cambios</h2>
+        <p>Podemos actualizar esta política; la fecha de «Última actualización» refleja la versión vigente.</p>
+        <p class="muted">Contacto: <a href="mailto:ceo@moone.dev">ceo@moone.dev</a></p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var LANGS = ['en', 'zh', 'ja', 'es'];
+    function setLang(lang) {
+      if (LANGS.indexOf(lang) === -1) lang = 'en';
+      LANGS.forEach(function (l) {
+        document.getElementById(l).classList.toggle('show', l === lang);
+        document.getElementById('btn-' + l).classList.toggle('active', l === lang);
+      });
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
+      var tag = document.getElementById('tagline');
+      tag.textContent = tag.getAttribute('data-' + lang) || tag.getAttribute('data-en');
+      try { localStorage.setItem('privacyLang', lang); } catch (e) {}
+    }
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('privacyLang'); } catch (e) {}
+      var nav = (navigator.language || 'en').toLowerCase();
+      var auto = nav.indexOf('zh') === 0 ? 'zh'
+               : nav.indexOf('ja') === 0 ? 'ja'
+               : nav.indexOf('es') === 0 ? 'es'
+               : 'en';
+      setLang(saved && LANGS.indexOf(saved) !== -1 ? saved : auto);
+    })();
+  </script>
+
+  <!--
+    RUSSIAN PRIVACY POLICY — CLOSED / DISABLED (kept for reversibility, not shown).
+    The app and listing are English-base + zh-Hans / ja / es; Russian is closed.
+    To re-enable: add a "RU" toggle button and an <section class="lang" id="ru"> block,
+    and include 'ru' in the LANGS array and the auto-detect.
+
+    Политика конфиденциальности — закрыта (не отображается). Контакт: ceo@moone.dev.
+    Данные обрабатываются в Германии (ЕС) по GDPR; удаление аккаунта — в приложении
+    (Настройки → Аккаунт → Удалить аккаунт); рекламы и трекинга нет.
+  -->
+</body>
+</html>

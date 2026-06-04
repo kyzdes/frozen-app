@@ -18,6 +18,9 @@ backend/.env
 .DS_Store
 **/.DS_Store
 
+# Browser automation artifacts
+.playwright-mcp/
+
 # Xcode
 *.xcuserstate
 *.xcuserdatad/
